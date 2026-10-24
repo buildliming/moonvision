@@ -1,0 +1,86 @@
+name: MoonVision checks
+
+on:
+  push:
+    branches: [default]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  MOONBIT_INSTALL_VERSION: 0.10.14+7d59c7ec9
+
+jobs:
+  backends:
+    name: Test ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [wasm-gc, wasm, js, native]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pinned official MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o /tmp/install-moonbit.sh
+          bash /tmp/install-moonbit.sh "$MOONBIT_INSTALL_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - run: moon version --all
+      - run: moon check --target ${{ matrix.target }} --deny-warn
+      - run: moon test --target ${{ matrix.target }} --deny-warn
+      - run: moon run examples/main --target ${{ matrix.target }}
+      - run: moon run examples/pipeline --target ${{ matrix.target }}
+
+  references-and-demo:
+    name: Independent references and browser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.9'
+          cache: pip
+          cache-dependency-path: verification/requirements.txt
+      - name: Install pinned official MoonBit toolchain
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o /tmp/install-moonbit.sh
+          bash /tmp/install-moonbit.sh "$MOONBIT_INSTALL_VERSION"
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - name: Check formatting and public interfaces
+        run: |
+          moon fmt
+          moon info
+          git diff --exit-code
+      - name: Independently recompute numerical references
+        run: |
+          python -m pip install -r verification/requirements.txt
+          python verification/generate_references.py --check-numerical
+      - name: Check compiled JavaScript and JSON interfaces
+        run: |
+          python tools/build_web.py
+          node tools/test_bridge.mjs
+      - name: Install optional browser test tooling
+        run: |
+          npm install --no-save --package-lock=false playwright@1.60.0
+          npx playwright install --with-deps chromium
+      - name: Exercise browser workflows
+        run: |
+          python tools/serve_demo.py > /tmp/moonvision-demo.log 2>&1 &
+          MOONVISION_SERVER_PID=$!
+          trap 'kill "$MOONVISION_SERVER_PID"' EXIT
+          node tools/browser_check.mjs
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-screenshots
+          path: artifacts/*.png
+          if-no-files-found: ignore

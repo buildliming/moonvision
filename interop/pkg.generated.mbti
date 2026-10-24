@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "buildliming/moonvision/interop"
+
+import {
+  "buildliming/moonvision/moonaug",
+  "buildliming/moonvision/moonwarp",
+}
+
+// Values
+pub fn image_to_tensor(@moonaug.Image) -> @moonwarp.Tensor raise InteropError
+
+pub fn tensor_to_image(@moonwarp.Tensor, batch_index? : Int) -> @moonaug.Image raise InteropError
+
+// Errors
+pub(all) suberror InteropError {
+  Invalid(String)
+}
+
+// Types and methods
+
+// Type aliases
+
+// Traits

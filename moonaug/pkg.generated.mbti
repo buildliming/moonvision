@@ -1,0 +1,105 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "buildliming/moonvision/moonaug"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn augment(Sample, Array[Step], Int, String, min_visibility? : Double) -> Augmented raise AugError
+
+pub fn process_json(String) -> String
+
+pub fn replay(Sample, Replay) -> Sample raise AugError
+
+pub fn replay_from_json(Json) -> Replay raise AugError
+
+pub fn replay_to_json(Replay) -> Json
+
+pub fn validate(Sample) -> Unit raise AugError
+
+// Errors
+pub(all) suberror AugError {
+  Invalid(String)
+} derive(Eq, @debug.Debug)
+pub fn AugError::equal(Self, Self) -> Bool
+pub fn AugError::not_equal(Self, Self) -> Bool
+pub fn AugError::to_repr(Self) -> @debug.Repr
+
+// Types and methods
+pub(all) struct Augmented {
+  sample : Sample
+  replay : Replay
+} derive(Eq, @debug.Debug)
+pub fn Augmented::equal(Self, Self) -> Bool
+pub fn Augmented::not_equal(Self, Self) -> Bool
+pub fn Augmented::to_repr(Self) -> @debug.Repr
+
+pub(all) struct BBox {
+  x_min : Double
+  y_min : Double
+  x_max : Double
+  y_max : Double
+  label : String
+} derive(Eq, ToJson, @debug.Debug)
+pub fn BBox::equal(Self, Self) -> Bool
+pub fn BBox::not_equal(Self, Self) -> Bool
+pub fn BBox::to_json(Self) -> Json
+pub fn BBox::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Image {
+  width : Int
+  height : Int
+  channels : Int
+  data : Array[Byte]
+} derive(Eq, @debug.Debug)
+pub fn Image::equal(Self, Self) -> Bool
+pub fn Image::not_equal(Self, Self) -> Bool
+pub fn Image::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Replay {
+  version : Int
+  input_width : Int
+  input_height : Int
+  input_channels : Int
+  min_visibility : Double
+  operations : Array[Transform]
+} derive(Eq, @debug.Debug)
+pub fn Replay::equal(Self, Self) -> Bool
+pub fn Replay::not_equal(Self, Self) -> Bool
+pub fn Replay::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Sample {
+  image : Image
+  mask : Array[Int]?
+  boxes : Array[BBox]
+} derive(Eq, @debug.Debug)
+pub fn Sample::equal(Self, Self) -> Bool
+pub fn Sample::not_equal(Self, Self) -> Bool
+pub fn Sample::to_repr(Self) -> @debug.Repr
+
+pub(all) struct Step {
+  transform : Transform
+  probability : Double
+} derive(Eq, @debug.Debug)
+pub fn Step::equal(Self, Self) -> Bool
+pub fn Step::not_equal(Self, Self) -> Bool
+pub fn Step::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Transform {
+  Resize(Int, Int)
+  Crop(Int, Int, Int, Int)
+  RandomCrop(Int, Int)
+  HFlip
+  VFlip
+  Rotate90(Int)
+  Brightness(Double)
+  Contrast(Double)
+} derive(Eq, @debug.Debug)
+pub fn Transform::equal(Self, Self) -> Bool
+pub fn Transform::not_equal(Self, Self) -> Bool
+pub fn Transform::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

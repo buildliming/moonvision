@@ -1,0 +1,15 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "buildliming/moonvision/bridge"
+
+// Values
+pub fn augment_json(String) -> String
+
+pub fn warp_json(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
