@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MoonVision · 视觉实验室</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="./"><span class="mark" aria-hidden="true">◒</span> MoonVision <span class="version">0.1</span></a>
+    <span class="local-tag"><span aria-hidden="true">●</span> 本地计算 · 无需上传</span>
+  </header>
+  <main>
+    <div class="intro"><p class="eyebrow">PURE MOONBIT / COMPUTER VISION</p><h1>让每一次变换，都有据可循。</h1><p>同步图像与标注，重放随机增强，用梯度学习几何变换。</p></div>
+    <div class="tabs" role="tablist" aria-label="实验模块">
+      <button id="tab-aug" role="tab" aria-controls="panel-aug" aria-selected="true">01 <span>标注同步增强</span></button>
+      <button id="tab-warp" role="tab" aria-controls="panel-warp" aria-selected="false" tabindex="-1">02 <span>可微图像配准</span></button>
+    </div>
+    <div id="status" class="status" role="status" aria-live="polite">正在加载计算模块…</div>
+    <section id="panel-aug" role="tabpanel" aria-labelledby="tab-aug">
+      <div class="workspace">
+        <aside class="controls">
+          <div class="section-label">输入与采样</div>
+          <label class="upload">选择本地图片<input id="upload" type="file" accept="image/*"></label>
+          <p class="hint">默认样本带有检测框与分割掩码。上传图片最长边缩至 256 像素，可编辑检测框。</p>
+          <div class="field-pair"><label>随机种子<input id="seed" type="number" min="0" max="2147483647" value="42"></label><label>样本 ID<input id="sample-id" value="sample-001" maxlength="100"></label></div>
+          <div class="section-label">变换流水线</div>
+          <label class="check"><input id="crop" type="checkbox" checked> 随机裁剪 <span>80%</span></label>
+          <label class="check"><input id="flip" type="checkbox" checked> 水平翻转 <span>p = 0.5</span></label>
+          <label class="check"><input id="rotate" type="checkbox" checked> 旋转 90° <span>p = 0.5</span></label>
+          <label class="check"><input id="color" type="checkbox" checked> 亮度与对比度 <span>p = 0.7</span></label>
+          <label class="check"><input id="show-mask" type="checkbox" checked> 叠加分割掩码</label>
+          <label>框的最低可见率 <output id="visibility-value">0.25</output><input id="visibility" type="range" min="0" max="1" step="0.05" value="0.25"></label>
+          <button id="augment" class="primary" disabled>执行增强 <span aria-hidden="true">↗</span></button>
+          <div class="button-row"><button id="replay" disabled>验证重放</button><button id="download" disabled>导出记录 ↓</button></div>
+          <label class="upload secondary">导入重放记录<input id="replay-file" type="file" accept="application/json,.json"></label>
+          <details><summary>编辑检测框</summary><label class="sr-only" for="boxes">检测框 JSON 数组</label><textarea id="boxes" rows="8" spellcheck="false"></textarea><p class="hint">连续半开区间 xyxy；类别标签随框同步过滤。</p></details>
+          <button id="reset" class="text-button">恢复示例样本</button>
+        </aside>
+        <div class="stage">
+          <div class="image-pair">
+            <figure><figcaption><span>原始样本</span><span id="source-meta" class="mono"></span></figcaption><div class="canvas-wrap"><canvas id="source" width="256" height="192" aria-label="原始图像及检测框、分割掩码"></canvas></div></figure>
+            <figure><figcaption><span>增强结果</span><span id="result-meta" class="mono">等待执行</span></figcaption><div class="canvas-wrap"><canvas id="result" width="256" height="192" aria-label="增强图像及同步后的检测框、分割掩码"></canvas></div></figure>
+          </div>
+          <div class="metrics"><div><span>保留检测框</span><strong id="box-count">—</strong></div><div><span>重放一致性</span><strong id="replay-result">待验证</strong></div><div><span>计算耗时</span><strong id="aug-time">—</strong></div></div>
+          <details class="record" open><summary>本次执行的变换记录</summary><pre id="replay-json">执行增强后，可导出确定的变换参数。</pre></details>
+          <p class="footnote">图像与标注共享空间变换；掩码使用最近邻插值；颜色变换保留标签值。</p>
+        </div>
+      </div>
+    </section>
+    <section id="panel-warp" role="tabpanel" aria-labelledby="tab-warp" hidden>
+      <div class="workspace">
+        <aside class="controls">
+          <div class="section-label">构造配准目标</div>
+          <p class="hint">通过已知仿射变换生成目标，再从单位矩阵出发，使用解析梯度学习六个仿射参数。</p>
+          <label>旋转角度 <output id="angle-value">12°</output><input id="angle" type="range" min="-20" max="20" step="1" value="12"></label>
+          <label>水平位移 <output id="tx-value">0.12</output><input id="tx" type="range" min="-0.25" max="0.25" step="0.01" value="0.12"></label>
+          <label>垂直位移 <output id="ty-value">-0.08</output><input id="ty" type="range" min="-0.25" max="0.25" step="0.01" value="-0.08"></label>
+          <label>迭代次数<select id="iterations"><option value="80">80</option><option value="160">160</option><option value="300" selected>300</option></select></label>
+          <button id="register" class="primary" disabled>开始梯度配准 <span aria-hidden="true">↗</span></button>
+          <div class="notice">配准是局部优化；结果受初始变换和图像纹理影响。示例使用平滑、非对称图案。</div>
+          <details><summary>坐标与梯度约定</summary><p class="hint">NCHW；归一化采样坐标；双线性插值；零填充；align_corners=false。仿射矩阵将输出坐标映射到输入坐标。</p></details>
+        </aside>
+        <div class="stage">
+          <div class="image-trio">
+            <figure><figcaption>输入</figcaption><div class="canvas-wrap"><canvas id="warp-source" width="48" height="48" aria-label="配准输入图像"></canvas></div></figure>
+            <figure><figcaption>目标</figcaption><div class="canvas-wrap"><canvas id="warp-target" width="48" height="48" aria-label="由已知仿射变换生成的目标图像"></canvas></div></figure>
+            <figure><figcaption>配准结果</figcaption><div class="canvas-wrap"><canvas id="warp-result" width="48" height="48" aria-label="优化后的配准图像"></canvas></div></figure>
+          </div>
+          <div class="metrics"><div><span>初始 MSE</span><strong id="initial-loss">—</strong></div><div><span>最终 MSE</span><strong id="final-loss">—</strong></div><div><span>损失下降</span><strong id="improvement">—</strong></div></div>
+          <figure class="chart"><figcaption><span>优化过程</span><span class="mono">MEAN SQUARED ERROR</span></figcaption><canvas id="loss-chart" width="800" height="220" aria-label="均方误差随优化迭代下降的曲线"></canvas><p id="loss-description" class="hint">开始配准后显示每次迭代的损失。</p></figure>
+          <details class="record"><summary>目标与学习到的仿射参数</summary><pre id="theta-json">等待配准。</pre></details>
+        </div>
+      </div>
+    </section>
+    <footer><span>MoonAug + MoonWarp · 一个可复现的视觉工具库</span><a href="https://github.com/buildliming/moonvision" target="_blank" rel="noreferrer">源代码 ↗</a></footer>
+  </main>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

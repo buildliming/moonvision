@@ -1,0 +1,10 @@
+{
+  "name": "moonvision-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "python tools/build_web.py",
+    "test:bridge": "node tools/test_bridge.mjs",
+    "demo": "python tools/serve_demo.py"
+  }
+}
