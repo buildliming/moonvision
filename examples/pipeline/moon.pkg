@@ -1,0 +1,7 @@
+import {
+  "buildliming/moonvision/interop",
+  "buildliming/moonvision/moonaug",
+  "buildliming/moonvision/moonwarp",
+}
+
+pkgtype(kind: "executable")
