@@ -1,0 +1,8 @@
+{
+  "action": "sample",
+  "input": {"shape": [1, 1, 2, 3], "data": [1, 2, 3, 4, 5, 6]},
+  "theta": [1, 0, 0, 0, 1, 0],
+  "out_height": 2,
+  "out_width": 3,
+  "align_corners": false
+}

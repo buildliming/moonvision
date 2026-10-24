@@ -1,0 +1,12 @@
+{
+  "action": "augment",
+  "sample": {
+    "image": {"width": 3, "height": 2, "channels": 1, "data": [10, 20, 30, 40, 50, 60]},
+    "mask": [0, 1, 1, 0, 2, 2],
+    "boxes": [{"x_min": 1, "y_min": 0, "x_max": 3, "y_max": 2, "label": "object"}]
+  },
+  "pipeline": [{"op": "hflip", "p": 1}, {"op": "resize", "width": 6, "height": 4}],
+  "seed": 42,
+  "sample_id": "example-001",
+  "min_visibility": 0.25
+}
