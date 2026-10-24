@@ -1,0 +1,9 @@
+/_build/
+/_target/
+/target/
+/.mooncakes/
+/.venv/
+**/__pycache__/
+/artifacts/
+/web/moonvision.js
+/web/moonvision.js.map
