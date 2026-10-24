@@ -1,0 +1,4 @@
+# CPU reference generation on Windows/Linux only. Core packages do not need Python.
+--extra-index-url https://download.pytorch.org/whl/cpu
+numpy==2.3.5
+torch==2.12.0+cpu
