@@ -65,3 +65,60 @@ pub extend AugError with Eq::{equal, not_equal}
 ///|
 /// Debug representation for augmentation errors.
 pub extend AugError with @debug.Debug::{to_repr}
+
+///|
+pub extend Padding with Eq::{equal, not_equal}
+
+///|
+pub extend Padding with @debug.Debug::{to_repr}
+
+///|
+pub extend LetterboxOptions with Eq::{equal, not_equal}
+
+///|
+pub extend LetterboxOptions with @debug.Debug::{to_repr}
+
+///|
+pub extend ResizedCropOptions with Eq::{equal, not_equal}
+
+///|
+pub extend ResizedCropOptions with @debug.Debug::{to_repr}
+
+///|
+pub extend Keypoint with Eq::{equal, not_equal}
+
+///|
+pub extend Keypoint with @debug.Debug::{to_repr}
+
+///|
+pub extend Keypoint with ToJson::{to_json}
+
+///|
+pub extend ExtendedSample with Eq::{equal, not_equal}
+
+///|
+pub extend ExtendedSample with @debug.Debug::{to_repr}
+
+///|
+pub extend ExtendedAugmented with Eq::{equal, not_equal}
+
+///|
+pub extend ExtendedAugmented with @debug.Debug::{to_repr}
+
+///|
+pub extend BatchItem with Eq::{equal, not_equal}
+
+///|
+pub extend BatchItem with @debug.Debug::{to_repr}
+
+///|
+pub extend BatchResult with Eq::{equal, not_equal}
+
+///|
+pub extend BatchResult with @debug.Debug::{to_repr}
+
+///|
+pub extend BatchReplay with Eq::{equal, not_equal}
+
+///|
+pub extend BatchReplay with @debug.Debug::{to_repr}

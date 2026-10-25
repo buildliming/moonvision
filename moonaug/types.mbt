@@ -29,11 +29,92 @@ pub(all) struct Sample {
 } derive(Debug, Eq)
 
 ///|
+/// Constant border sizes and per-channel byte fill. Fill length must equal the image channels.
+/// Mask padding uses the non-negative class ID mask_value.
+pub(all) struct Padding {
+  left : Int
+  top : Int
+  right : Int
+  bottom : Int
+  fill : Array[Byte]
+  mask_value : Int
+} derive(Debug, Eq)
+
+///|
+/// Fit inside a target rectangle while preserving aspect ratio, then pad centrally.
+/// Odd padding puts the extra pixel on the right/bottom. scale_up=false never enlarges.
+pub(all) struct LetterboxOptions {
+  width : Int
+  height : Int
+  fill : Array[Byte]
+  mask_value : Int
+  scale_up : Bool
+} derive(Debug, Eq)
+
+///|
+/// Sample a crop area fraction uniformly and aspect ratio log-uniformly, then resize.
+/// Ten attempts are followed by a deterministic centered aspect-ratio fallback.
+pub(all) struct ResizedCropOptions {
+  width : Int
+  height : Int
+  scale_min : Double
+  scale_max : Double
+  ratio_min : Double
+  ratio_max : Double
+} derive(Debug, Eq)
+
+///|
+/// A labeled point in pixel-edge coordinates: pixel (x,y)'s center is (x+.5,y+.5).
+/// Visible points lie in the closed image rectangle. Invisible points keep their index
+/// and may lie outside it, but all coordinates must be finite. Visibility never recovers.
+pub(all) struct Keypoint {
+  x : Double
+  y : Double
+  label : String
+  visible : Bool
+} derive(Debug, Eq, ToJson)
+
+///|
+/// Add keypoints without changing the existing Sample initialization contract.
+pub(all) struct ExtendedSample {
+  sample : Sample
+  keypoints : Array[Keypoint]
+} derive(Debug, Eq)
+
+///|
+/// Annotated augmentation result with index-preserving keypoints.
+pub(all) struct ExtendedAugmented {
+  sample : ExtendedSample
+  replay : Replay
+} derive(Debug, Eq)
+
+///|
+/// One batch input with a stable non-empty dataset identity.
+pub(all) struct BatchItem {
+  sample_id : String
+  input : ExtendedSample
+} derive(Debug, Eq)
+
+///|
+/// Batch result retaining the input identity and corresponding replay.
+pub(all) struct BatchResult {
+  sample_id : String
+  output : ExtendedAugmented
+} derive(Debug, Eq)
+
+///|
+/// A replay keyed by stable identity; replay_batch matches by identity rather than order.
+pub(all) struct BatchReplay {
+  sample_id : String
+  replay : Replay
+} derive(Debug, Eq)
+
+///|
 /// Supported transforms. Sizes are (width, height); Crop is (x, y, width, height).
 /// Rotate90 counts clockwise quarter turns. Brightness multiplies RGB/gray;
 /// Contrast scales around 128. Neither color operation changes RGBA alpha.
 /// Color factors must be finite and in [0, 16]. Images are limited to 16777216 pixels.
-/// RandomCrop is only permitted in an augmentation pipeline, never in a replay.
+/// RandomCrop, Letterbox, and RandomResizedCrop are pipeline-only; replay stores primitives.
 pub(all) enum Transform {
   Resize(Int, Int)
   Crop(Int, Int, Int, Int)
@@ -43,6 +124,9 @@ pub(all) enum Transform {
   Rotate90(Int)
   Brightness(Double)
   Contrast(Double)
+  Pad(Padding)
+  Letterbox(LetterboxOptions)
+  RandomResizedCrop(ResizedCropOptions)
 } derive(Debug, Eq)
 
 ///|
@@ -53,7 +137,8 @@ pub(all) struct Step {
 } derive(Debug, Eq)
 
 ///|
-/// Version 1 replay: resolved operations, original shape, and box visibility policy.
+/// Resolved operations, original shape, and box visibility policy.
+/// Version 1 supports the original primitives; version 2 additionally supports Pad.
 /// Replay validates the exact original shape before executing any operation.
 pub(all) struct Replay {
   version : Int
@@ -88,6 +173,15 @@ const MAX_BOXES : Int = 100000
 
 ///|
 const MAX_JSON_CHARS : Int = 16777216
+
+///|
+const MAX_KEYPOINTS : Int = 100000
+
+///|
+const MAX_BATCH_ITEMS : Int = 64
+
+///|
+const MAX_JSON_VALUES : Int = 1048576
 
 ///|
 fn operation_count(count : Int) -> Unit raise AugError {
@@ -189,7 +283,70 @@ fn validate_transform(transform : Transform) -> Unit raise AugError {
       }
     }
     HFlip | VFlip | Rotate90(_) => ()
+    Pad(padding) => validate_padding(padding)
+    Letterbox(options) => {
+      dimensions(options.width, options.height)
+      validate_fill(options.fill, options.mask_value)
+    }
+    RandomResizedCrop(options) => {
+      dimensions(options.width, options.height)
+      guard finite(options.scale_min) &&
+        finite(options.scale_max) &&
+        options.scale_min > 0.0 &&
+        options.scale_min <= options.scale_max &&
+        options.scale_max <= 1.0 else {
+        raise Invalid("crop scale range must satisfy 0 < min <= max <= 1")
+      }
+      guard finite(options.ratio_min) &&
+        finite(options.ratio_max) &&
+        options.ratio_min > 0.0 &&
+        options.ratio_min <= options.ratio_max else {
+        raise Invalid(
+          "crop aspect ratios must be finite and satisfy 0 < min <= max",
+        )
+      }
+    }
   }
+}
+
+///|
+fn validate_fill(fill : Array[Byte], mask_value : Int) -> Unit raise AugError {
+  guard fill.length() == 1 || fill.length() == 3 || fill.length() == 4 else {
+    raise Invalid("padding fill must have 1, 3, or 4 channel values")
+  }
+  guard mask_value >= 0 else {
+    raise Invalid("mask padding class ID must be non-negative")
+  }
+}
+
+///|
+fn validate_padding(padding : Padding) -> Unit raise AugError {
+  guard padding.left >= 0 &&
+    padding.top >= 0 &&
+    padding.right >= 0 &&
+    padding.bottom >= 0 else {
+    raise Invalid("padding sizes must be non-negative")
+  }
+  validate_fill(padding.fill, padding.mask_value)
+}
+
+///|
+fn padded_shape(
+  width : Int,
+  height : Int,
+  padding : Padding,
+) -> (Int, Int) raise AugError {
+  validate_padding(padding)
+  guard padding.left <= MAX_PIXELS - width &&
+    padding.right <= MAX_PIXELS - width - padding.left &&
+    padding.top <= MAX_PIXELS - height &&
+    padding.bottom <= MAX_PIXELS - height - padding.top else {
+    raise Invalid("padding exceeds the image dimension limit")
+  }
+  let out_width = width + padding.left + padding.right
+  let out_height = height + padding.top + padding.bottom
+  dimensions(out_width, out_height)
+  (out_width, out_height)
 }
 
 ///|
