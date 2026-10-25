@@ -38,13 +38,95 @@ fn check_sample(input : Tensor, grid : Grid) -> Array[Int] raise WarpError {
   shape
 }
 
+// Return a pixel coordinate and its derivative with respect to normalized input.
+// Reflection is periodic in normalized coordinates with period four. Reducing
+// before unnormalizing avoids overflow and integer conversion for huge inputs.
+
 ///|
-/// Sample an NCHW tensor with an NHW2 normalized grid, bilinear interpolation,
-/// and zero padding. Coordinates in [-1,1] follow PyTorch grid_sample semantics.
+fn sampling_coordinate(
+  value : Double,
+  size : Int,
+  align_corners : Bool,
+  padding : PaddingMode,
+) -> (Double, Double) {
+  let scale = coordinate_scale(size, align_corners)
+  match padding {
+    Zeros => (pixel_coordinate(value, size, align_corners), scale)
+    Border => {
+      if size == 1 || value <= -1.0 {
+        return (0.0, 0.0)
+      }
+      if value >= 1.0 {
+        return ((size - 1).to_double(), 0.0)
+      }
+      let pixel = pixel_coordinate(value, size, align_corners)
+      if pixel <= 0.0 {
+        (0.0, 0.0)
+      } else if pixel >= (size - 1).to_double() {
+        ((size - 1).to_double(), 0.0)
+      } else {
+        (pixel, scale)
+      }
+    }
+    Reflection => {
+      if size == 1 {
+        return (0.0, 0.0)
+      }
+      let reduced = value % 4.0
+      let pixel = pixel_coordinate(reduced, size, align_corners)
+      let low = if align_corners { 0.0 } else { -0.5 }
+      let span = if align_corners {
+        (size - 1).to_double()
+      } else {
+        size.to_double()
+      }
+      let shifted = pixel - low
+      let phase = shifted.abs() % (2.0 * span)
+      let direction = if shifted < 0.0 { -1.0 } else { 1.0 }
+      let (reflected, gradient) = if phase <= span {
+        (low + phase, direction * scale)
+      } else {
+        (low + 2.0 * span - phase, -direction * scale)
+      }
+      // Exact clipping endpoints are outside for gradients, as in PyTorch.
+      if reflected <= 0.0 {
+        (0.0, 0.0)
+      } else if reflected >= (size - 1).to_double() {
+        ((size - 1).to_double(), 0.0)
+      } else {
+        (reflected, gradient)
+      }
+    }
+  }
+}
+
+// Only used after bounding coordinates to the small image support interval.
+
+///|
+fn nearest_pixel(value : Double) -> Int {
+  let lower = @double.floor(value).to_int()
+  let fraction = value - lower.to_double()
+  if fraction < 0.5 {
+    lower
+  } else if fraction > 0.5 {
+    lower + 1
+  } else if lower % 2 == 0 {
+    lower
+  } else {
+    lower + 1
+  }
+}
+
+///|
+/// Sample NCHW input using normalized NHW2 coordinates. Defaults preserve the
+/// original bilinear/zero-padding API. Nearest is suitable for class masks.
+/// Both corner modes and all padding modes follow PyTorch grid_sample semantics.
 pub fn grid_sample(
   input : Tensor,
   grid : Grid,
   align_corners? : Bool = false,
+  mode? : SamplingMode = Bilinear,
+  padding? : PaddingMode = Zeros,
 ) -> Tensor raise WarpError {
   let shape = check_sample(input, grid)
   let channels = shape[1]
@@ -55,32 +137,51 @@ pub fn grid_sample(
     for y in 0..<height {
       for x in 0..<width {
         let gi = ((n * height + y) * width + x) * 2
-        let px = pixel_coordinate(grid.values[gi], input.dims[3], align_corners)
-        let py = pixel_coordinate(
+        let (px, _) = sampling_coordinate(
+          grid.values[gi],
+          input.dims[3],
+          align_corners,
+          padding,
+        )
+        let (py, _) = sampling_coordinate(
           grid.values[gi + 1],
           input.dims[2],
           align_corners,
+          padding,
         )
-        // Skip before float-to-int conversion, including huge finite coordinates.
-        if px > -1.0 &&
-          px < input.dims[3].to_double() &&
-          py > -1.0 &&
-          py < input.dims[2].to_double() {
-          let x0 = @double.floor(px).to_int()
-          let y0 = @double.floor(py).to_int()
-          let dx = px - x0.to_double()
-          let dy = py - y0.to_double()
-          for c in 0..<channels {
-            let a = read_zero(input, n, c, y0, x0)
-            let b = read_zero(input, n, c, y0, x0 + 1)
-            let d = read_zero(input, n, c, y0 + 1, x0)
-            let e = read_zero(input, n, c, y0 + 1, x0 + 1)
-            values[((n * channels + c) * height + y) * width + x] = a *
-              (1.0 - dx) *
-              (1.0 - dy) +
-              b * dx * (1.0 - dy) +
-              d * (1.0 - dx) * dy +
-              e * dx * dy
+        // This test precedes every float-to-int conversion, even for huge grids.
+        if px >= -1.0 &&
+          px <= input.dims[3].to_double() &&
+          py >= -1.0 &&
+          py <= input.dims[2].to_double() {
+          match mode {
+            Nearest => {
+              let ix = nearest_pixel(px)
+              let iy = nearest_pixel(py)
+              for c in 0..<channels {
+                values[((n * channels + c) * height + y) * width + x] = read_zero(
+                  input, n, c, iy, ix,
+                )
+              }
+            }
+            Bilinear => {
+              let x0 = @double.floor(px).to_int()
+              let y0 = @double.floor(py).to_int()
+              let dx = px - x0.to_double()
+              let dy = py - y0.to_double()
+              for c in 0..<channels {
+                let a = read_zero(input, n, c, y0, x0)
+                let b = read_zero(input, n, c, y0, x0 + 1)
+                let d = read_zero(input, n, c, y0 + 1, x0)
+                let e = read_zero(input, n, c, y0 + 1, x0 + 1)
+                values[((n * channels + c) * height + y) * width + x] = a *
+                  (1.0 - dx) *
+                  (1.0 - dy) +
+                  b * dx * (1.0 - dy) +
+                  d * (1.0 - dx) * dy +
+                  e * dx * dy
+              }
+            }
           }
         }
       }
@@ -109,13 +210,16 @@ fn add_input_grad(
 }
 
 ///|
-/// Backpropagate an output gradient through bilinear zero-padded sampling.
-/// Pixel-knot derivatives use floor-selected right/bottom derivatives, as PyTorch.
+/// Backpropagate sampling into image and normalized grid values. Nearest
+/// scatters gradients into selected pixels and returns an identically zero
+/// grid gradient. Bilinear gradients include clipping/reflection derivatives.
 pub fn grid_sample_backward(
   input : Tensor,
   grid : Grid,
   grad_output : Tensor,
   align_corners? : Bool = false,
+  mode? : SamplingMode = Bilinear,
+  padding? : PaddingMode = Zeros,
 ) -> SampleGrad raise WarpError {
   let shape = check_sample(input, grid)
   if shape != grad_output.dims {
@@ -130,72 +234,91 @@ pub fn grid_sample_backward(
     for y in 0..<height {
       for x in 0..<width {
         let gi = ((n * height + y) * width + x) * 2
-        let px = pixel_coordinate(grid.values[gi], input.dims[3], align_corners)
-        let py = pixel_coordinate(
+        let (px, xscale) = sampling_coordinate(
+          grid.values[gi],
+          input.dims[3],
+          align_corners,
+          padding,
+        )
+        let (py, yscale) = sampling_coordinate(
           grid.values[gi + 1],
           input.dims[2],
           align_corners,
+          padding,
         )
-        // At exactly -1 the right derivative can be nonzero; at width it is zero.
         if px >= -1.0 &&
-          px < input.dims[3].to_double() &&
+          px <= input.dims[3].to_double() &&
           py >= -1.0 &&
-          py < input.dims[2].to_double() {
-          let x0 = @double.floor(px).to_int()
-          let y0 = @double.floor(py).to_int()
-          let dx = px - x0.to_double()
-          let dy = py - y0.to_double()
-          let mut gx = 0.0
-          let mut gy = 0.0
-          for c in 0..<channels {
-            let g = grad_output.values[((n * channels + c) * height + y) * width +
-              x]
-            let a = read_zero(input, n, c, y0, x0)
-            let b = read_zero(input, n, c, y0, x0 + 1)
-            let d = read_zero(input, n, c, y0 + 1, x0)
-            let e = read_zero(input, n, c, y0 + 1, x0 + 1)
-            add_input_grad(
-              input_values,
-              input,
-              n,
-              c,
-              y0,
-              x0,
-              g * (1.0 - dx) * (1.0 - dy),
-            )
-            add_input_grad(
-              input_values,
-              input,
-              n,
-              c,
-              y0,
-              x0 + 1,
-              g * dx * (1.0 - dy),
-            )
-            add_input_grad(
-              input_values,
-              input,
-              n,
-              c,
-              y0 + 1,
-              x0,
-              g * (1.0 - dx) * dy,
-            )
-            add_input_grad(
-              input_values,
-              input,
-              n,
-              c,
-              y0 + 1,
-              x0 + 1,
-              g * dx * dy,
-            )
-            gx = gx + g * ((b - a) * (1.0 - dy) + (e - d) * dy)
-            gy = gy + g * ((d - a) * (1.0 - dx) + (e - b) * dx)
+          py <= input.dims[2].to_double() {
+          match mode {
+            Nearest => {
+              let ix = nearest_pixel(px)
+              let iy = nearest_pixel(py)
+              for c in 0..<channels {
+                let g = grad_output.values[((n * channels + c) * height + y) *
+                  width +
+                  x]
+                add_input_grad(input_values, input, n, c, iy, ix, g)
+              }
+            }
+            Bilinear => {
+              let x0 = @double.floor(px).to_int()
+              let y0 = @double.floor(py).to_int()
+              let dx = px - x0.to_double()
+              let dy = py - y0.to_double()
+              let mut gx = 0.0
+              let mut gy = 0.0
+              for c in 0..<channels {
+                let g = grad_output.values[((n * channels + c) * height + y) *
+                  width +
+                  x]
+                let a = read_zero(input, n, c, y0, x0)
+                let b = read_zero(input, n, c, y0, x0 + 1)
+                let d = read_zero(input, n, c, y0 + 1, x0)
+                let e = read_zero(input, n, c, y0 + 1, x0 + 1)
+                add_input_grad(
+                  input_values,
+                  input,
+                  n,
+                  c,
+                  y0,
+                  x0,
+                  g * (1.0 - dx) * (1.0 - dy),
+                )
+                add_input_grad(
+                  input_values,
+                  input,
+                  n,
+                  c,
+                  y0,
+                  x0 + 1,
+                  g * dx * (1.0 - dy),
+                )
+                add_input_grad(
+                  input_values,
+                  input,
+                  n,
+                  c,
+                  y0 + 1,
+                  x0,
+                  g * (1.0 - dx) * dy,
+                )
+                add_input_grad(
+                  input_values,
+                  input,
+                  n,
+                  c,
+                  y0 + 1,
+                  x0 + 1,
+                  g * dx * dy,
+                )
+                gx = gx + g * ((b - a) * (1.0 - dy) + (e - d) * dy)
+                gy = gy + g * ((d - a) * (1.0 - dx) + (e - b) * dx)
+              }
+              grid_values[gi] = gx * xscale
+              grid_values[gi + 1] = gy * yscale
+            }
           }
-          grid_values[gi] = gx * coordinate_scale(input.dims[3], align_corners)
-          grid_values[gi + 1] = gy *
-            coordinate_scale(input.dims[2], align_corners)
         }
       }
     }
@@ -240,13 +363,16 @@ pub fn affine_grid_backward(
 }
 
 ///|
-/// Apply affine-grid generation and sampling as one differentiable operation.
+/// Apply affine-grid generation and sampling as one operation. Theta maps
+/// output normalized coordinates to input normalized coordinates.
 pub fn warp_affine(
   input : Tensor,
   theta : Array[Double],
   out_height : Int,
   out_width : Int,
   align_corners? : Bool = false,
+  mode? : SamplingMode = Bilinear,
+  padding? : PaddingMode = Zeros,
 ) -> Tensor raise WarpError {
   let grid = affine_grid(
     theta,
@@ -255,7 +381,7 @@ pub fn warp_affine(
     out_width,
     align_corners~,
   )
-  grid_sample(input, grid, align_corners~)
+  grid_sample(input, grid, align_corners~, mode~, padding~)
 }
 
 ///|
@@ -265,6 +391,8 @@ pub fn warp_affine_backward(
   theta : Array[Double],
   grad_output : Tensor,
   align_corners? : Bool = false,
+  mode? : SamplingMode = Bilinear,
+  padding? : PaddingMode = Zeros,
 ) -> WarpGrad raise WarpError {
   let grid = affine_grid(
     theta,
@@ -273,7 +401,14 @@ pub fn warp_affine_backward(
     grad_output.dims[3],
     align_corners~,
   )
-  let gradients = grid_sample_backward(input, grid, grad_output, align_corners~)
+  let gradients = grid_sample_backward(
+    input,
+    grid,
+    grad_output,
+    align_corners~,
+    mode~,
+    padding~,
+  )
   {
     input_grad: gradients.input_grad,
     theta_grad: affine_grid_backward(gradients.grid_grad, align_corners~),

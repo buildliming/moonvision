@@ -7,15 +7,15 @@ pub(all) suberror WarpError {
 ///|
 /// A validated dense image batch in NCHW order, with Double samples.
 /// Construct with `Tensor::new`; accessors return copies.
-pub struct Tensor {
+struct Tensor {
   dims : Array[Int]
   values : Array[Double]
 }
 
 ///|
 /// Normalized sampling coordinates in NHW2 order, with x before y.
-/// Coordinates outside [-1,1] are allowed and use zero padding.
-pub struct Grid {
+/// Coordinates outside [-1,1] are allowed; sampling chooses their padding rule.
+struct Grid {
   dims : Array[Int]
   values : Array[Double]
 }
@@ -40,6 +40,42 @@ pub(all) struct Registration {
   theta : Array[Double]
   output : Tensor
   losses : Array[Double]
+}
+
+///|
+/// Interpolation used by sampling. Nearest uses ties-to-even pixel rounding.
+pub(all) enum SamplingMode {
+  Bilinear
+  Nearest
+}
+
+///|
+/// Behavior outside the image: zeros, clipped edge pixels, or repeated reflection.
+pub(all) enum PaddingMode {
+  Zeros
+  Border
+  Reflection
+}
+
+///|
+/// One coarse-to-fine optimization stage. Losses are comparable within this
+/// stage only; height and width describe its target tensor.
+pub(all) struct RegistrationLevel {
+  height : Int
+  width : Int
+  theta : Array[Double]
+  losses : Array[Double]
+}
+
+///|
+/// Coarse-to-fine registration result in the original normalized coordinates.
+/// initial_loss and final_loss are measured at the original target resolution.
+pub(all) struct PyramidRegistration {
+  theta : Array[Double]
+  output : Tensor
+  levels : Array[RegistrationLevel]
+  initial_loss : Double
+  final_loss : Double
 }
 
 ///|
