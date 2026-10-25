@@ -8,9 +8,9 @@ MoonVision 把视觉数据处理与模型中的空间采样放在一个有明确
 
 | 包 | 用途 | 已实现 |
 | --- | --- | --- |
-| [`moonaug`](moonaug/README.md) | 检测、分割与关键点增强 | 图像/mask/bbox/关键点同步，Pad、Letterbox、RandomResizedCrop、基础变换，按 ID 确定采样与批处理，Replay v1/v2 |
-| [`moonwarp`](moonwarp/README.md) | 可微采样与图像配准 | 双线性/最近邻 × 零/边缘/反射填充，完整一阶梯度，矩阵组合/求逆/坐标转换，单尺度与抗混叠多尺度配准 |
-| [`interop`](interop/README.md) | 连接完整视觉流程 | 图像/张量/类别 mask 转换，批次与逐通道归一化，仿射变换同步图像、mask、框和关键点 |
+| [`moonaug`](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/moonaug/README.md) | 检测、分割与关键点增强 | 图像/mask/bbox/关键点同步，Pad、Letterbox、RandomResizedCrop、基础变换，按 ID 确定采样与批处理，Replay v1/v2 |
+| [`moonwarp`](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/moonwarp/README.md) | 可微采样与图像配准 | 双线性/最近邻 × 零/边缘/反射填充，完整一阶梯度，矩阵组合/求逆/坐标转换，单尺度与抗混叠多尺度配准 |
+| [`interop`](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/interop/README.md) | 连接完整视觉流程 | 图像/张量/类别 mask 转换，批次与逐通道归一化，仿射变换同步图像、mask、框和关键点 |
 
 ## 快速运行
 
@@ -42,9 +42,9 @@ python tools/serve_demo.py
 - **标注同步增强**：切换十组真实照片样本、编辑检测框、上传本地图片、选择 Letterbox/随机缩放裁剪、改变随机种子、导入/导出重放记录。
 - **可微图像配准**：切换照片、边界模式和单/多尺度优化，观察六个仿射参数、损失曲线和配准结果。
 
-![标注同步增强演示](docs/images/moonaug.png)
+![标注同步增强演示](https://raw.githubusercontent.com/buildliming/moonvision/667b63ac5f4735d6dc2451641d18b4a056796386/docs/images/moonaug.png)
 
-![可微图像配准演示](docs/images/moonwarp.png)
+![可微图像配准演示](https://raw.githubusercontent.com/buildliming/moonvision/667b63ac5f4735d6dc2451641d18b4a056796386/docs/images/moonwarp.png)
 
 ### 作为 MoonBit 库使用
 
@@ -64,7 +64,7 @@ import {
 }
 ```
 
-具体 typed API、错误处理和示例见 [MoonAug 文档](moonaug/README.md)、[MoonWarp 文档](moonwarp/README.md)，完整公共接口由各包的 `pkg.generated.mbti` 记录。
+具体 typed API、错误处理和示例见 [MoonAug 文档](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/moonaug/README.md)、[MoonWarp 文档](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/moonwarp/README.md)，完整公共接口由各包的 `pkg.generated.mbti` 记录。
 
 ### JSON / Node.js 接口
 
@@ -84,7 +84,7 @@ node tools/test_bridge.mjs
 - 中央有限差分校验平滑位置的梯度；不可微边界单独对照 PyTorch 的取值约定。
 - NumPy/PyTorch 图像参考覆盖增强结果、框几何、整数 mask、alpha 保留、组合变换和重放。
 - Node.js 桥接的 **29 项端到端检查**验证 JSON 传输、参考数值、错误输入和重放。当前参考下采样与梯度最大绝对误差为 `8.881784197001252e-16`；不代表所有输入的误差上限。
-- **6 张原始真实照片、10 组离线样本、173 次真实图接口检查**：人物、动物、物体、室外、纹理、模糊，覆盖 L/RGB/RGBA、竖幅/宽幅/缩略图。像素、掩码、标注、梯度和重放均有独立对照。[真实图说明与结果](docs/real-images.md)
+- **6 张原始真实照片、10 组离线样本、173 次真实图接口检查**：人物、动物、物体、室外、纹理、模糊，覆盖 L/RGB/RGBA、竖幅/宽幅/缩略图。像素、掩码、标注、梯度和重放均有独立对照。[真实图说明与结果](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/docs/real-images.md)
 - 跨包负向编译验证 Tensor/Grid 内部数组无法被访问或修改；资源预算、非有限数、JSON 严格整数与退化几何均有回归。
 
 ```text
@@ -99,7 +99,7 @@ python verification/generate_references.py --check
 python tools/verify.py --references --real-images
 ```
 
-详见 [复现说明](docs/reproduction.md)、[独立参考说明](verification/README.md) 和 [验收记录](docs/validation.md)。
+详见 [复现说明](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/docs/reproduction.md)、[独立参考说明](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/verification/README.md) 和 [验收记录](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/docs/validation.md)。
 
 ## 支持边界
 
@@ -113,7 +113,7 @@ MoonWarp 支持二维、最近邻/双线性、三种填充和一阶梯度。配�
 
 `python tools/count_core.py` 可复核核心规模：约 4500 行库源码，其中约 3800 行非空非注释内容。只统计 `moonaug/`、`moonwarp/`、`interop/` 的实现，排除测试、生成接口、图片数据、Python、CLI 与浏览器代码。
 
-0.2 读取旧 Replay v1，含 Pad 的记录使用 v2；旧 `Sample` 结构及默认采样行为保留。Tensor/Grid 的内部数组已封装，原先直接读写 `.dims`/`.values` 的调用需改用 `shape()`/`data()` 与校验构造函数。JSON 新增明确资源预算。详见 [迁移说明](docs/migration-0.2.md)。
+0.2 读取旧 Replay v1，含 Pad 的记录使用 v2；旧 `Sample` 结构及默认采样行为保留。Tensor/Grid 的内部数组已封装，原先直接读写 `.dims`/`.values` 的调用需改用 `shape()`/`data()` 与校验构造函数。JSON 新增明确资源预算。详见 [迁移说明](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/docs/migration-0.2.md)。
 
 ## 项目结构
 
@@ -130,11 +130,11 @@ docs/          数值设计、复现、验收、参赛说明
 
 ## License / References
 
-沿用仓库原有 [MIT 许可证](LICENSE)。实现参考公开语义与论文，测试调用第三方工具作为独立数值基准；第三方工具不随核心库打包。
+沿用仓库原有 [MIT 许可证](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/LICENSE)。实现参考公开语义与论文，测试调用第三方工具作为独立数值基准；第三方工具不随核心库打包。
 
 - [PyTorch grid_sample](https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.grid_sample.html)
 - [PyTorch affine_grid](https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.affine_grid.html)
 - [Spatial Transformer Networks](https://arxiv.org/abs/1506.02025)
 - [Albumentations additional targets](https://albumentations.ai/docs/4-advanced-guides/additional-targets/)
 
-开发使用 AI 辅助代码、测试和文档，功能与验收结果以本仓库可运行代码和复现命令为准。参赛摘要见 [docs/hackathon.md](docs/hackathon.md)。
+开发使用 AI 辅助代码、测试和文档，功能与验收结果以本仓库可运行代码和复现命令为准。参赛摘要见 [docs/hackathon.md](https://github.com/buildliming/moonvision/blob/667b63ac5f4735d6dc2451641d18b4a056796386/docs/hackathon.md)。
