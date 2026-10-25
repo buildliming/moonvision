@@ -284,7 +284,7 @@ test "invalid samples operations probabilities and replay shapes raise catchable
   })
   let record = augment(input, [], 0, "").replay
   expect_invalid(fn() raise AugError {
-    ignore(replay(input, { ..record, version: 2, }))
+    ignore(replay(input, { ..record, version: 3, }))
   })
   expect_invalid(fn() raise AugError {
     ignore(replay(input, { ..record, input_width: 2, }))

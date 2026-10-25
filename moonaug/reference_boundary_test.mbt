@@ -156,7 +156,7 @@ test "replay JSON rejects unresolved randomness and future versions" {
   )
   for
     invalid in [
-      request.replace(old="\"version\":1", new="\"version\":2"),
+      request.replace(old="\"version\":1", new="\"version\":3"),
       request.replace(old="\"input_width\":1", new="\"input_width\":2"),
       request.replace(
         old="\"operations\":[]",

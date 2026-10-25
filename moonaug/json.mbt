@@ -55,7 +55,9 @@ fn optional_number(
 }
 
 ///|
-fn sample_from_json(value : Json) -> Sample raise AugError {
+/// Parse a packed-byte sample, checking the 1048576-channel-value JSON budget
+/// before allocating its byte buffer. Invalid samples raise AugError.
+pub fn sample_from_json(value : Json) -> Sample raise AugError {
   let raw_image = field(value, "image")
   let width = integer(field(raw_image, "width"))
   let height = integer(field(raw_image, "height"))
@@ -64,6 +66,7 @@ fn sample_from_json(value : Json) -> Sample raise AugError {
   guard channels == 1 || channels == 3 || channels == 4 else {
     raise Invalid("image channels must be 1, 3, or 4")
   }
+  json_value_count(width * height * channels)
   let raw_data = array(field(raw_image, "data"))
   guard raw_data.length() == width * height * channels else {
     raise Invalid(
@@ -112,7 +115,9 @@ fn sample_from_json(value : Json) -> Sample raise AugError {
 }
 
 ///|
-fn sample_to_json(sample : Sample) -> Json {
+/// Serialize an already valid Sample. Validate untrusted typed input first.
+/// This low-level serializer does not impose process_json's response budget.
+pub fn sample_to_json(sample : Sample) -> Json {
   Json::object({
     "image": Json::object({
       "width": sample.image.width.to_json(),
@@ -151,6 +156,35 @@ fn transform_from_json(value : Json) -> Transform raise AugError {
     "rotate90" => Rotate90(integer(field(value, "turns")))
     "brightness" => Brightness(number(field(value, "factor")))
     "contrast" => Contrast(number(field(value, "factor")))
+    "pad" =>
+      Pad({
+        left: integer(field(value, "left")),
+        top: integer(field(value, "top")),
+        right: integer(field(value, "right")),
+        bottom: integer(field(value, "bottom")),
+        fill: fill_from_json(field(value, "fill")),
+        mask_value: integer(field(value, "mask_value")),
+      })
+    "letterbox" =>
+      Letterbox({
+        width: integer(field(value, "width")),
+        height: integer(field(value, "height")),
+        fill: fill_from_json(field(value, "fill")),
+        mask_value: integer(field(value, "mask_value")),
+        scale_up: match optional_field(value, "scale_up") {
+          None => true
+          Some(item) => boolean(item)
+        },
+      })
+    "random_resized_crop" =>
+      RandomResizedCrop({
+        width: integer(field(value, "width")),
+        height: integer(field(value, "height")),
+        scale_min: number(field(value, "scale_min")),
+        scale_max: number(field(value, "scale_max")),
+        ratio_min: number(field(value, "ratio_min")),
+        ratio_max: number(field(value, "ratio_max")),
+      })
     _ => raise Invalid("unsupported transform: " + name)
   }
   validate_transform(transform)
@@ -188,11 +222,40 @@ fn transform_to_json(transform : Transform) -> Json {
       Json::object({ "op": "brightness".to_json(), "factor": factor.to_json() })
     Contrast(factor) =>
       Json::object({ "op": "contrast".to_json(), "factor": factor.to_json() })
+    Pad(padding) =>
+      Json::object({
+        "op": "pad".to_json(),
+        "left": padding.left.to_json(),
+        "top": padding.top.to_json(),
+        "right": padding.right.to_json(),
+        "bottom": padding.bottom.to_json(),
+        "fill": padding.fill.map(fn(value) { value.to_int() }).to_json(),
+        "mask_value": padding.mask_value.to_json(),
+      })
+    Letterbox(options) =>
+      Json::object({
+        "op": "letterbox".to_json(),
+        "width": options.width.to_json(),
+        "height": options.height.to_json(),
+        "fill": options.fill.map(fn(value) { value.to_int() }).to_json(),
+        "mask_value": options.mask_value.to_json(),
+        "scale_up": options.scale_up.to_json(),
+      })
+    RandomResizedCrop(options) =>
+      Json::object({
+        "op": "random_resized_crop".to_json(),
+        "width": options.width.to_json(),
+        "height": options.height.to_json(),
+        "scale_min": options.scale_min.to_json(),
+        "scale_max": options.scale_max.to_json(),
+        "ratio_min": options.ratio_min.to_json(),
+        "ratio_max": options.ratio_max.to_json(),
+      })
   }
 }
 
 ///|
-/// Serialize a resolved replay to the stable version 1 JSON schema.
+/// Serialize a valid resolved replay. Version 2 extends version 1 with Pad.
 pub fn replay_to_json(record : Replay) -> Json {
   Json::object({
     "version": record.version.to_json(),
@@ -205,10 +268,12 @@ pub fn replay_to_json(record : Replay) -> Json {
 }
 
 ///|
-/// Parse and validate a version 1 JSON replay; unresolved random operations are rejected.
+/// Parse and preflight a version 1 or 2 replay and all intermediate shapes.
 pub fn replay_from_json(value : Json) -> Replay raise AugError {
   let version = integer(field(value, "version"))
-  guard version == 1 else { raise Invalid("unsupported replay version") }
+  guard version == 1 || version == 2 else {
+    raise Invalid("unsupported replay version")
+  }
   let input_width = integer(field(value, "input_width"))
   let input_height = integer(field(value, "input_height"))
   let input_channels = integer(field(value, "input_channels"))
@@ -223,12 +288,9 @@ pub fn replay_from_json(value : Json) -> Replay raise AugError {
   operation_count(raw_operations.length())
   for item in raw_operations {
     let operation = transform_from_json(item)
-    if operation is RandomCrop(_, _) {
-      raise Invalid("replay cannot contain unresolved random_crop")
-    }
     operations.push(operation)
   }
-  {
+  let record = {
     version,
     input_width,
     input_height,
@@ -236,60 +298,15 @@ pub fn replay_from_json(value : Json) -> Replay raise AugError {
     min_visibility,
     operations,
   }
+  ignore(validate_record(record))
+  record
 }
 
 ///|
-fn process_request(request : Json) -> Json raise AugError {
-  let action = string(field(request, "action"))
-  let sample = sample_from_json(field(request, "sample"))
-  match action {
-    "augment" => {
-      let pipeline = []
-      let raw_pipeline = array(field(request, "pipeline"))
-      operation_count(raw_pipeline.length())
-      for raw_step in raw_pipeline {
-        pipeline.push({
-          transform: transform_from_json(raw_step),
-          probability: optional_number(raw_step, "p", 1.0),
-        })
-      }
-      let seed = match optional_field(request, "seed") {
-        Some(value) => integer(value)
-        None => 0
-      }
-      let sample_id = match optional_field(request, "sample_id") {
-        Some(value) => string(value)
-        None => ""
-      }
-      let result = augment(
-        sample,
-        pipeline,
-        seed,
-        sample_id,
-        min_visibility=optional_number(request, "min_visibility", 0.0),
-      )
-      Json::object({
-        "ok": true.to_json(),
-        "sample": sample_to_json(result.sample),
-        "replay": replay_to_json(result.replay),
-      })
-    }
-    "replay" => {
-      let record = replay_from_json(field(request, "replay"))
-      let output = replay(sample, record)
-      Json::object({
-        "ok": true.to_json(),
-        "sample": sample_to_json(output),
-        "replay": replay_to_json(record),
-      })
-    }
-    _ => raise Invalid("action must be augment or replay")
-  }
-}
-
-///|
-/// Browser/CLI bridge. Accepts the documented augment/replay request schema and
-/// always returns JSON: {ok:true,sample,replay} or {ok:false,error}.
+/// Browser/CLI bridge for single-item and ID-keyed batch augmentation/replay.
+/// Single-item responses preserve {ok:true,sample,replay}; optional keypoints
+/// are returned when supplied. Batch success returns {ok:true,items:[...]}.
+/// Errors always return {ok:false,error}.
 /// Malformed JSON, invalid input, and unsupported operations are caught.
 /// Requests are limited to 16777216 UTF-16 code units, checked before JSON parsing.
 pub fn process_json(input : String) -> String {
