@@ -1,0 +1,254 @@
+{
+  "passed": true,
+  "real_source_photos": 6,
+  "fixtures": 10,
+  "categories": [
+    "animal",
+    "blurred",
+    "objects",
+    "outdoor",
+    "person",
+    "texture"
+  ],
+  "bridge_requests": 173,
+  "elapsed_seconds": 24.823,
+  "versions": {
+    "torch": "2.12.0+cpu",
+    "numpy": "2.3.5",
+    "pillow": "12.3.0"
+  },
+  "cases": [
+    {
+      "id": "astronaut",
+      "category": "person",
+      "mode": "RGB",
+      "dimensions": [
+        192,
+        192
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 74,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 1,
+      "max_sampling_absolute_error": 4.393707619954057e-14,
+      "max_gradient_absolute_error": 4.0245584642661925e-16,
+      "finite_difference_knot_margin": 1.7023641220248464e-05,
+      "max_theta_finite_difference_error": 1.026743912113659e-09,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": {
+        "initial_loss": 0.015299872234129252,
+        "final_loss": 4.8405403915805275e-23,
+        "loss_reduction_percent": 100.0
+      }
+    },
+    {
+      "id": "chelsea",
+      "category": "animal",
+      "mode": "RGB",
+      "dimensions": [
+        224,
+        149
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 9,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 0,
+      "max_sampling_absolute_error": 4.288236432614667e-14,
+      "max_gradient_absolute_error": 1.0755285551056204e-16,
+      "finite_difference_knot_margin": 3.5037153548245215e-05,
+      "max_theta_finite_difference_error": 1.6809693133973402e-09,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": {
+        "initial_loss": 0.00313565459748977,
+        "final_loss": 6.915330460561973e-18,
+        "loss_reduction_percent": 99.99999999999977
+      }
+    },
+    {
+      "id": "coffee",
+      "category": "objects",
+      "mode": "RGB",
+      "dimensions": [
+        240,
+        160
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 0,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 1,
+      "max_sampling_absolute_error": 5.112577028398846e-14,
+      "max_gradient_absolute_error": 2.1510571102112408e-16,
+      "finite_difference_knot_margin": 1.3259316801850218e-05,
+      "max_theta_finite_difference_error": 8.522779149089388e-10,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    },
+    {
+      "id": "rocket",
+      "category": "outdoor",
+      "mode": "RGB",
+      "dimensions": [
+        256,
+        171
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 36,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 1,
+      "max_sampling_absolute_error": 1.4099832412739488e-14,
+      "max_gradient_absolute_error": 9.367506770274758e-17,
+      "finite_difference_knot_margin": 1.0777883366230867e-05,
+      "max_theta_finite_difference_error": 7.232745556987052e-10,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    },
+    {
+      "id": "grass",
+      "category": "texture",
+      "mode": "L",
+      "dimensions": [
+        192,
+        192
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 74,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 0,
+      "max_sampling_absolute_error": 3.347322419244847e-14,
+      "max_gradient_absolute_error": 3.8163916471489756e-17,
+      "finite_difference_knot_margin": 1.1820974691545416e-05,
+      "max_theta_finite_difference_error": 1.7836355968581241e-09,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    },
+    {
+      "id": "clock",
+      "category": "blurred",
+      "mode": "L",
+      "dimensions": [
+        224,
+        168
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 0,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 0,
+      "max_sampling_absolute_error": 3.047562202596055e-14,
+      "max_gradient_absolute_error": 1.0408340855860843e-16,
+      "finite_difference_knot_margin": 2.6305990360242504e-05,
+      "max_theta_finite_difference_error": 1.950765906449936e-09,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": {
+        "initial_loss": 0.00022460785187107112,
+        "final_loss": 4.1078829972313045e-06,
+        "loss_reduction_percent": 98.17108664589816
+      }
+    },
+    {
+      "id": "chelsea_alpha",
+      "category": "animal",
+      "mode": "RGBA",
+      "dimensions": [
+        160,
+        106
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 0,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 0,
+      "max_sampling_absolute_error": 5.545564008002657e-14,
+      "max_gradient_absolute_error": 1.3183898417423734e-16,
+      "finite_difference_knot_margin": 2.4282245050244455e-05,
+      "max_theta_finite_difference_error": 1.5601160727879426e-09,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    },
+    {
+      "id": "astronaut_portrait",
+      "category": "person",
+      "mode": "RGB",
+      "dimensions": [
+        96,
+        192
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 0,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 1,
+      "max_sampling_absolute_error": 2.7977620220553945e-14,
+      "max_gradient_absolute_error": 1.249000902703301e-16,
+      "finite_difference_knot_margin": 1.0362504163197173e-05,
+      "max_theta_finite_difference_error": 8.77917558095298e-10,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    },
+    {
+      "id": "rocket_wide",
+      "category": "outdoor",
+      "mode": "RGB",
+      "dimensions": [
+        256,
+        64
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 0,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 0,
+      "max_sampling_absolute_error": 1.226796442210798e-14,
+      "max_gradient_absolute_error": 3.2959746043559335e-17,
+      "finite_difference_knot_margin": 2.6531804088847366e-05,
+      "max_theta_finite_difference_error": 6.02674770765893e-10,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    },
+    {
+      "id": "coffee_thumbnail",
+      "category": "objects",
+      "mode": "RGB",
+      "dimensions": [
+        17,
+        11
+      ],
+      "augmentation_cases": 3,
+      "sampling_cases": 4,
+      "nearest_tie_positions": 1,
+      "nearest_contract": "identical supplied grid exact; theta route exact away from half-pixel knots",
+      "max_augmentation_byte_error": 0,
+      "max_sampling_absolute_error": 4.440892098500626e-16,
+      "max_gradient_absolute_error": 1.3877787807814457e-17,
+      "finite_difference_knot_margin": 0.0002831596738239739,
+      "max_theta_finite_difference_error": 6.86168143138044e-10,
+      "exact_replay": true,
+      "exact_mask_categories": true,
+      "annotations": "geometric probes",
+      "registration": null
+    }
+  ]
+}
