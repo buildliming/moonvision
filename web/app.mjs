@@ -3,7 +3,11 @@ const worker = new Worker(new URL('./worker.mjs', import.meta.url), { type: 'mod
 const pending = new Map();
 let sequence = 0;
 let sourceSample;
+let sourceKeypoints = [];
 let augResult;
+let augKeypoints = [];
+let fixtureManifest;
+let uploadedSample;
 let lastReplay;
 let warpSource;
 let warpTarget;
@@ -27,6 +31,7 @@ worker.onmessage = async ({ data }) => {
     $('augment').disabled = false;
     $('register').disabled = false;
     try {
+      await loadGallery();
       await updateTarget();
       await augment();
       document.body.dataset.ready = 'true';
@@ -48,12 +53,12 @@ async function runBusy(message, action) {
   if (busy) return;
   busy = true;
   status(message);
-  for (const id of ['augment', 'replay', 'register', 'reset', 'upload', 'replay-file', 'angle', 'tx', 'ty']) $(id).disabled = true;
+  for (const id of ['augment', 'replay', 'register', 'reset', 'upload', 'replay-file', 'angle', 'tx', 'ty', 'sample-gallery', 'warp-gallery', 'padding']) $(id).disabled = true;
   try { await action(); }
   catch (error) { status(error.message, true); }
   finally {
     busy = false;
-    for (const id of ['augment', 'register', 'reset', 'upload', 'replay-file', 'angle', 'tx', 'ty']) $(id).disabled = false;
+    for (const id of ['augment', 'register', 'reset', 'upload', 'replay-file', 'angle', 'tx', 'ty', 'sample-gallery', 'warp-gallery', 'padding']) $(id).disabled = false;
     $('replay').disabled = !lastReplay;
   }
 }
@@ -84,7 +89,7 @@ function syntheticSample() {
   };
 }
 const palette = [[0, 0, 0], [245, 176, 66], [80, 219, 196], [191, 142, 245]];
-function drawSample(canvas, sample, overlays = true) {
+function drawSample(canvas, sample, overlays = true, keypoints = []) {
   const { width, height, channels, data } = sample.image;
   canvas.width = width; canvas.height = height;
   const context = canvas.getContext('2d');
@@ -114,21 +119,27 @@ function drawSample(canvas, sample, overlays = true) {
     context.fillStyle = color;
     context.fillText(box.label, box.x_min + 3, textY - 3);
   }
+  for (const point of keypoints) {
+    if (!point.visible) continue;
+    context.beginPath(); context.arc(point.x, point.y, Math.max(2.2, width / 80), 0, Math.PI * 2);
+    context.fillStyle = '#fff'; context.fill(); context.strokeStyle = '#b43872'; context.lineWidth = 1.5; context.stroke();
+  }
 }
 function redrawAug() {
-  if (sourceSample) drawSample($('source'), sourceSample);
-  if (augResult) drawSample($('result'), augResult);
+  if (sourceSample) drawSample($('source'), sourceSample, true, sourceKeypoints);
+  if (augResult) drawSample($('result'), augResult, true, augKeypoints);
 }
 function setSource(sample) {
   sourceSample = sample;
-  augResult = null; lastReplay = null;
+  sourceKeypoints = sample.boxes.map((box, index) => ({ x: (box.x_min + box.x_max) / 2, y: (box.y_min + box.y_max) / 2, label: `point-${index}`, visible: true }));
+  augResult = null; lastReplay = null; augKeypoints = [];
   $('boxes').value = JSON.stringify(sample.boxes, null, 2);
   $('source-meta').textContent = `${sample.image.width} × ${sample.image.height}`;
   $('result-meta').textContent = '等待执行';
   $('replay').disabled = true; $('download').disabled = true;
   $('box-count').textContent = '—'; $('replay-result').textContent = '待验证'; $('aug-time').textContent = '—';
   $('replay-json').textContent = '执行增强后，可导出确定的变换参数。';
-  drawSample($('source'), sample);
+  drawSample($('source'), sample, true, sourceKeypoints);
   const resultCanvas = $('result'); resultCanvas.width = sample.image.width; resultCanvas.height = sample.image.height;
 }
 function currentSample() {
@@ -141,7 +152,13 @@ function pipeline() {
   if ($('crop').checked) operations.push({ op: 'random_crop', width: Math.max(1, Math.floor(sourceSample.image.width * .8)), height: Math.max(1, Math.floor(sourceSample.image.height * .8)) });
   if ($('flip').checked) operations.push({ op: 'hflip', p: .5 });
   if ($('rotate').checked) operations.push({ op: 'rotate90', turns: 1, p: .5 });
-  operations.push({ op: 'resize', width: 192, height: 192 });
+  const strategy = $('resize-strategy').value;
+  if (strategy === 'letterbox') {
+    const channels = sourceSample.image.channels;
+    operations.push({ op: 'letterbox', width: 192, height: 192, fill: channels === 4 ? [114, 114, 114, 255] : Array(channels).fill(114), mask_value: 0, scale_up: true });
+  } else if (strategy === 'random_resized_crop') {
+    operations.push({ op: 'random_resized_crop', width: 192, height: 192, scale_min: .5, scale_max: 1, ratio_min: .75, ratio_max: 1.333333333333 });
+  } else operations.push({ op: 'resize', width: 192, height: 192 });
   if ($('color').checked) operations.push({ op: 'brightness', factor: 1.15, p: .7 }, { op: 'contrast', factor: 1.1, p: .7 });
   return operations;
 }
@@ -150,8 +167,9 @@ async function augment() {
     const sample = currentSample();
     const seed = Number($('seed').value);
     if (!Number.isInteger(seed) || seed < 0 || seed > 2147483647) throw new Error('随机种子须为 0 到 2147483647 的整数。');
-    const { result, elapsed } = await call('augment', { action: 'augment', sample, pipeline: pipeline(), seed, sample_id: $('sample-id').value, min_visibility: Number($('visibility').value) });
+    const { result, elapsed } = await call('augment', { action: 'augment', sample, keypoints: sourceKeypoints, pipeline: pipeline(), seed, sample_id: $('sample-id').value, min_visibility: Number($('visibility').value) });
     augResult = result.sample; lastReplay = result.replay;
+    augKeypoints = result.keypoints;
     sourceSample = sample;
     redrawAug();
     $('result-meta').textContent = `${augResult.image.width} × ${augResult.image.height}`;
@@ -165,8 +183,8 @@ async function augment() {
 }
 $('augment').onclick = augment;
 $('replay').onclick = () => runBusy('正在使用记录重放…', async () => {
-  const { result } = await call('augment', { action: 'replay', sample: currentSample(), replay: lastReplay });
-  const same = JSON.stringify(result.sample) === JSON.stringify(augResult);
+  const { result } = await call('augment', { action: 'replay', sample: currentSample(), keypoints: sourceKeypoints, replay: lastReplay });
+  const same = JSON.stringify(result.sample) === JSON.stringify(augResult) && JSON.stringify(result.keypoints) === JSON.stringify(augKeypoints);
   $('replay-result').textContent = same ? '完全一致 ✓' : '输入已变化';
   status(same ? '重放验证通过：像素、掩码、检测框与标签全部一致。' : '当前输入与上次增强不同；请恢复原输入后重试。', !same);
 });
@@ -180,9 +198,10 @@ $('replay-file').onchange = (event) => runBusy('正在读取重放记录…', as
   const file = event.target.files[0]; if (!file) return;
   if (file.size > 2_000_000) throw new Error('重放记录超过 2 MB。');
   const replay = JSON.parse(await file.text());
-  const { result } = await call('augment', { action: 'replay', sample: currentSample(), replay });
+  const { result } = await call('augment', { action: 'replay', sample: currentSample(), keypoints: sourceKeypoints, replay });
   augResult = result.sample; lastReplay = replay;
-  drawSample($('result'), augResult);
+  augKeypoints = result.keypoints;
+  drawSample($('result'), augResult, true, augKeypoints);
   $('result-meta').textContent = `${augResult.image.width} × ${augResult.image.height}`;
   $('box-count').textContent = `${augResult.boxes.length} / ${currentSample().boxes.length}`;
   $('replay-result').textContent = '已导入'; $('download').disabled = false;
@@ -197,13 +216,88 @@ $('upload').onchange = (event) => runBusy('正在读取本地图片…', async (
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
   const context = canvas.getContext('2d'); context.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-  setSource({ image: { width: canvas.width, height: canvas.height, channels: 4, data: Array.from(context.getImageData(0, 0, canvas.width, canvas.height).data) }, mask: null, boxes: [] });
+  uploadedSample = { image: { width: canvas.width, height: canvas.height, channels: 4, data: Array.from(context.getImageData(0, 0, canvas.width, canvas.height).data) }, mask: null, boxes: [] };
+  setSource(uploadedSample);
+  if (!$('sample-gallery').querySelector('option[value="uploaded"]')) {
+    const option = document.createElement('option'); option.value = 'uploaded'; option.textContent = '已上传的本地图片'; $('sample-gallery').append(option);
+  }
+  $('sample-gallery').value = 'uploaded';
+  $('sample-note').textContent = '本地图片已加载，可以编辑检测框。';
   status('图片已在本地加载。可以编辑检测框，然后执行增强。');
   event.target.value = '';
 });
-$('reset').onclick = () => { setSource(syntheticSample()); augment(); };
+$('reset').onclick = () => { $('sample-gallery').value = 'synthetic'; $('sample-note').textContent = '几何示例带有检测框、分割掩码与关键点。'; setSource(syntheticSample()); augment(); };
 $('show-mask').onchange = redrawAug;
 $('visibility').oninput = () => { $('visibility-value').textContent = Number($('visibility').value).toFixed(2); };
+
+async function loadGallery() {
+  const response = await fetch('samples/manifest.json');
+  if (!response.ok) throw new Error('真实照片清单加载失败。');
+  fixtureManifest = await response.json();
+  const names = { astronaut: '人物 · NASA 宇航员', chelsea: '动物 · 猫', coffee: '物体 · 咖啡杯', rocket: '室外 · 火箭', grass: '纹理 · 灰度草地', clock: '模糊 · 灰度时钟', chelsea_alpha: '透明通道 · 猫', astronaut_portrait: '竖幅 · 人物', rocket_wide: '宽幅 · 室外', coffee_thumbnail: '缩略图 · 咖啡杯' };
+  for (const fixture of fixtureManifest.fixtures) {
+    for (const id of ['sample-gallery', 'warp-gallery']) {
+      const option = document.createElement('option'); option.value = fixture.id;
+      option.textContent = `${names[fixture.id] || fixture.id} (${fixture.width}×${fixture.height})`;
+      $(id).append(option);
+    }
+  }
+}
+async function photoBitmap(id) {
+  const fixture = fixtureManifest.fixtures.find(item => item.id === id);
+  if (!fixture) throw new Error('未找到所选真实照片。');
+  const response = await fetch(`samples/${fixture.file}`);
+  if (!response.ok) throw new Error('照片加载失败。');
+  return { bitmap: await createImageBitmap(await response.blob()), fixture };
+}
+function photoSample(bitmap, fixture) {
+  const { width, height, channels } = fixture;
+  const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+  const context = canvas.getContext('2d'); context.drawImage(bitmap, 0, 0);
+  const rgba = context.getImageData(0, 0, width, height).data;
+  const data = [], mask = [], boxes = [
+    { x_min: width * .1, y_min: height * .12, x_max: width * .62, y_max: height * .76, label: 'probe-a' },
+    { x_min: width * .62, y_min: height * .47, x_max: width * .88, y_max: height * .73, label: 'probe-b' },
+  ];
+  for (let p = 0; p < width * height; p++) {
+    for (let c = 0; c < channels; c++) data.push(rgba[p * 4 + c]);
+    const x = p % width, y = Math.floor(p / width);
+    mask.push(x >= width * .1 && x < width * .62 && y >= height * .12 && y < height * .76 ? 1 : (x / width - .75) ** 2 + (y / height - .6) ** 2 < .13 ** 2 ? 2 : 0);
+  }
+  return { image: { width, height, channels, data }, mask, boxes };
+}
+$('sample-gallery').onchange = () => runBusy('正在加载示例图片…', async () => {
+  const id = $('sample-gallery').value;
+  if (id === 'uploaded') {
+    setSource(uploadedSample);
+    $('sample-note').textContent = '本地图片已加载，可以编辑检测框。';
+  } else if (id === 'synthetic') {
+    setSource(syntheticSample());
+    $('sample-note').textContent = '几何示例带有检测框、分割掩码与关键点。';
+  } else {
+    const { bitmap, fixture } = await photoBitmap(id);
+    try { setSource(photoSample(bitmap, fixture)); } finally { bitmap.close(); }
+    $('sample-note').textContent = '真实照片；叠加的是几何测试标注，用于检查变换，不是语义分割真值。';
+  }
+  status('样本已加载，可以执行增强并验证重放。');
+});
+$('warp-gallery').onchange = () => runBusy('正在准备配准图片…', async () => {
+  const id = $('warp-gallery').value;
+  if (id === 'synthetic') warpSource = makeWarpSource();
+  else {
+    const { bitmap } = await photoBitmap(id);
+    try {
+      const canvas = document.createElement('canvas'); canvas.width = 48; canvas.height = 48;
+      const context = canvas.getContext('2d'); context.drawImage(bitmap, 0, 0, 48, 48);
+      const pixels = context.getImageData(0, 0, 48, 48).data, data = [];
+      for (let p = 0; p < 48 * 48; p++) data.push((pixels[p * 4] * .299 + pixels[p * 4 + 1] * .587 + pixels[p * 4 + 2] * .114) / 255);
+      warpSource = { shape: [1, 1, 48, 48], data };
+    } finally { bitmap.close(); }
+  }
+  drawTensor($('warp-source'), warpSource);
+  await updateTarget();
+  status('配准输入已更新。可以选择边界模式与单尺度或多尺度优化。');
+});
 
 function makeWarpSource() {
   const size = 48, data = [];
@@ -223,10 +317,11 @@ function drawTensor(canvas, tensor) {
   drawSample(canvas, { image: { width, height, channels: 4, data }, mask: null, boxes: [] }, false);
 }
 async function updateTarget() {
+  delete document.body.dataset.registration;
   const version = ++targetVersion;
   const angle = Number($('angle').value) * Math.PI / 180;
   const theta = [Math.cos(angle), -Math.sin(angle), Number($('tx').value), Math.sin(angle), Math.cos(angle), Number($('ty').value)];
-  const { result } = await call('warp', { action: 'sample', input: warpSource, theta, out_height: 48, out_width: 48, align_corners: false });
+  const { result } = await call('warp', { action: 'sample', input: warpSource, theta, out_height: 48, out_width: 48, align_corners: false, padding: $('padding').value });
   if (version !== targetVersion) return;
   targetTheta = theta; warpTarget = result.output;
   drawTensor($('warp-target'), warpTarget); drawTensor($('warp-result'), warpSource);
@@ -240,6 +335,7 @@ for (const id of ['angle', 'tx', 'ty']) {
     updateTarget().catch((error) => status(error.message, true));
   };
 }
+$('padding').onchange = () => updateTarget().catch(error => status(error.message, true));
 function drawLosses(losses) {
   const canvas = $('loss-chart'), ctx = canvas.getContext('2d');
   const width = canvas.width, height = canvas.height, left = 60, top = 20, bottom = 34;
@@ -261,15 +357,21 @@ function drawLosses(losses) {
 }
 $('register').onclick = () => runBusy('正在通过解析梯度优化仿射参数…', async () => {
   await updateTarget();
-  const { result, elapsed } = await call('warp', { action: 'register', input: warpSource, target: warpTarget, iterations: Number($('iterations').value), learning_rate: .5, align_corners: false });
+  const multiscale = $('multiscale').checked;
+  const iterations = Number($('iterations').value);
+  const request = { action: multiscale ? 'register_multiscale' : 'register', input: warpSource, target: warpTarget, learning_rate: .5, align_corners: false, padding: $('padding').value };
+  if (multiscale) Object.assign(request, { levels: 3, iterations_per_level: Math.ceil(iterations / 3) });
+  else request.iterations = iterations;
+  const { result, elapsed } = await call('warp', request);
   drawTensor($('warp-result'), result.output);
   $('initial-loss').textContent = result.initial_loss.toExponential(3);
   $('final-loss').textContent = result.final_loss.toExponential(3);
   const reduction = result.initial_loss > 0 ? (1 - result.final_loss / result.initial_loss) * 100 : 0;
   $('improvement').textContent = `${reduction.toFixed(2)}%`;
-  drawLosses(result.losses);
+  const losses = result.losses || result.levels.at(-1).losses;
+  drawLosses(losses);
   $('theta-json').textContent = JSON.stringify({ target: targetTheta, learned: result.theta }, null, 2);
-  $('loss-description').textContent = `${result.losses.length - 1} 次优化后，MSE 从 ${result.initial_loss.toExponential(4)} 降至 ${result.final_loss.toExponential(4)}。`;
+  $('loss-description').textContent = `${multiscale ? '曲线展示最细层；最终结果在原分辨率择优。' : `${losses.length - 1} 次优化。`} MSE 从 ${result.initial_loss.toExponential(4)} 降至 ${result.final_loss.toExponential(4)}。`;
   document.body.dataset.registration = 'complete';
   status(`配准完成，用时 ${elapsed.toFixed(1)} ms。参数、图像与每步损失均来自 MoonWarp。`);
 });

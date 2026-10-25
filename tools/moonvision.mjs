@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import readline from 'node:readline';
-import { augment_json, warp_json } from '../web/moonvision.js';
+import { augment_json, warp_json, interop_json } from '../web/moonvision.js';
 
 const [, , mode, filename] = process.argv;
-const processJson = mode === 'augment' ? augment_json : mode === 'warp' ? warp_json : null;
+const processJson = mode === 'augment' ? augment_json : mode === 'warp' ? warp_json : mode === 'interop' ? interop_json : null;
 if (!processJson) {
-  console.error('Usage: node tools/moonvision.mjs augment|warp [request.json]\nWithout a file, reads one JSON request per stdin line.');
+  console.error('Usage: node tools/moonvision.mjs augment|warp|interop [request.json]\nWithout a file, reads one JSON request per stdin line.');
   process.exit(2);
 }
 if (filename) {

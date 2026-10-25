@@ -1,10 +1,14 @@
 import {
+  "buildliming/moonvision/interop",
   "buildliming/moonvision/moonaug" @aug,
   "buildliming/moonvision/moonwarp" @warp,
 }
 
 options(
   link: {
-    "js": { "exports": [ "augment_json", "warp_json" ], "format": "esm" },
+    "js": {
+      "exports": [ "augment_json", "warp_json", "interop_json" ],
+      "format": "esm",
+    },
   },
 )

@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="masthead">
-    <a class="wordmark" href="./"><span class="mark" aria-hidden="true">◒</span> MoonVision <span class="version">0.1</span></a>
+    <a class="wordmark" href="./"><span class="mark" aria-hidden="true">◒</span> MoonVision <span class="version">0.2</span></a>
     <span class="local-tag"><span aria-hidden="true">●</span> 本地计算 · 无需上传</span>
   </header>
   <main>
@@ -22,14 +22,16 @@
       <div class="workspace">
         <aside class="controls">
           <div class="section-label">输入与采样</div>
+          <label>示例图片<select id="sample-gallery"><option value="synthetic">几何示例（带标注）</option></select></label>
           <label class="upload">选择本地图片<input id="upload" type="file" accept="image/*"></label>
-          <p class="hint">默认样本带有检测框与分割掩码。上传图片最长边缩至 256 像素，可编辑检测框。</p>
+          <p id="sample-note" class="hint">默认样本带有检测框与分割掩码。上传图片最长边缩至 256 像素，可编辑检测框。</p>
           <div class="field-pair"><label>随机种子<input id="seed" type="number" min="0" max="2147483647" value="42"></label><label>样本 ID<input id="sample-id" value="sample-001" maxlength="100"></label></div>
           <div class="section-label">变换流水线</div>
           <label class="check"><input id="crop" type="checkbox" checked> 随机裁剪 <span>80%</span></label>
           <label class="check"><input id="flip" type="checkbox" checked> 水平翻转 <span>p = 0.5</span></label>
           <label class="check"><input id="rotate" type="checkbox" checked> 旋转 90° <span>p = 0.5</span></label>
           <label class="check"><input id="color" type="checkbox" checked> 亮度与对比度 <span>p = 0.7</span></label>
+          <label>输出尺寸策略<select id="resize-strategy"><option value="resize">拉伸缩放至 192 × 192</option><option value="letterbox">等比例缩放与填充</option><option value="random_resized_crop">随机缩放裁剪</option></select></label>
           <label class="check"><input id="show-mask" type="checkbox" checked> 叠加分割掩码</label>
           <label>框的最低可见率 <output id="visibility-value">0.25</output><input id="visibility" type="range" min="0" max="1" step="0.05" value="0.25"></label>
           <button id="augment" class="primary" disabled>执行增强 <span aria-hidden="true">↗</span></button>
@@ -45,7 +47,7 @@
           </div>
           <div class="metrics"><div><span>保留检测框</span><strong id="box-count">—</strong></div><div><span>重放一致性</span><strong id="replay-result">待验证</strong></div><div><span>计算耗时</span><strong id="aug-time">—</strong></div></div>
           <details class="record" open><summary>本次执行的变换记录</summary><pre id="replay-json">执行增强后，可导出确定的变换参数。</pre></details>
-          <p class="footnote">图像与标注共享空间变换；掩码使用最近邻插值；颜色变换保留标签值。</p>
+          <p class="footnote">图像、框与关键点共享变换；掩码使用最近邻插值。关键点保持顺序，超出裁剪区域时标为不可见。</p>
         </div>
       </div>
     </section>
@@ -53,11 +55,14 @@
       <div class="workspace">
         <aside class="controls">
           <div class="section-label">构造配准目标</div>
+          <label>输入图片<select id="warp-gallery"><option value="synthetic">平滑非对称示例</option></select></label>
           <p class="hint">通过已知仿射变换生成目标，再从单位矩阵出发，使用解析梯度学习六个仿射参数。</p>
           <label>旋转角度 <output id="angle-value">12°</output><input id="angle" type="range" min="-20" max="20" step="1" value="12"></label>
           <label>水平位移 <output id="tx-value">0.12</output><input id="tx" type="range" min="-0.25" max="0.25" step="0.01" value="0.12"></label>
           <label>垂直位移 <output id="ty-value">-0.08</output><input id="ty" type="range" min="-0.25" max="0.25" step="0.01" value="-0.08"></label>
           <label>迭代次数<select id="iterations"><option value="80">80</option><option value="160">160</option><option value="300" selected>300</option></select></label>
+          <label>采样边界<select id="padding"><option value="zeros">零填充</option><option value="border">边缘延伸</option><option value="reflection">反射填充</option></select></label>
+          <label class="check"><input id="multiscale" type="checkbox"> 多尺度配准 <span>3 层金字塔</span></label>
           <button id="register" class="primary" disabled>开始梯度配准 <span aria-hidden="true">↗</span></button>
           <div class="notice">配准是局部优化；结果受初始变换和图像纹理影响。示例使用平滑、非对称图案。</div>
           <details><summary>坐标与梯度约定</summary><p class="hint">NCHW；归一化采样坐标；双线性插值；零填充；align_corners=false。仿射矩阵将输出坐标映射到输入坐标。</p></details>
@@ -74,7 +79,7 @@
         </div>
       </div>
     </section>
-    <footer><span>MoonAug + MoonWarp · 一个可复现的视觉工具库</span><a href="https://github.com/buildliming/moonvision" target="_blank" rel="noreferrer">源代码 ↗</a></footer>
+    <footer><span>MoonAug + MoonWarp · 一个可复现的视觉工具库</span><a href="samples/ATTRIBUTION.md" target="_blank">真实照片来源</a><a href="https://github.com/buildliming/moonvision" target="_blank" rel="noreferrer">源代码 ↗</a></footer>
   </main>
   <script type="module" src="app.mjs"></script>
 </body>

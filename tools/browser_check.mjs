@@ -30,6 +30,13 @@ try {
   await page.waitForFunction(() => !document.getElementById('augment').disabled);
   await page.locator('#replay').click();
   await page.waitForFunction(() => document.getElementById('replay-result').textContent.includes('完全一致'));
+  await page.locator('#sample-gallery').selectOption('chelsea_alpha');
+  await page.waitForFunction(() => !document.getElementById('augment').disabled && document.getElementById('source-meta').textContent.includes('160'));
+  await page.locator('#resize-strategy').selectOption('letterbox');
+  await page.locator('#augment').click();
+  await page.waitForFunction(() => !document.getElementById('augment').disabled && JSON.parse(document.getElementById('replay-json').textContent).version === 2);
+  await page.locator('#replay').click();
+  await page.waitForFunction(() => document.getElementById('replay-result').textContent.includes('完全一致'));
   fs.mkdirSync('artifacts', { recursive: true });
   await page.screenshot({ path: 'artifacts/moonaug-desktop.png', fullPage: true });
   await page.locator('#tab-warp').click();
@@ -38,10 +45,19 @@ try {
   const improvement = Number((await page.locator('#improvement').textContent()).replace('%', ''));
   assert.ok(improvement > 95, `registration should reduce loss by >95%, got ${improvement}`);
   await page.screenshot({ path: 'artifacts/moonwarp-desktop.png', fullPage: true });
+  await page.locator('#warp-gallery').selectOption('astronaut');
+  await page.waitForFunction(() => !document.getElementById('register').disabled && document.getElementById('status').textContent.includes('配准输入已更新'));
+  await page.locator('#padding').selectOption('border');
+  await page.locator('#multiscale').check();
+  await page.locator('#register').click();
+  await page.waitForSelector('body[data-registration="complete"]', { timeout: 60000 });
+  const realReduction = Number((await page.locator('#improvement').textContent()).replace('%', ''));
+  assert.ok(Number.isFinite(realReduction) && realReduction >= 0, 'multiscale real-photo registration retains the best result');
+  await page.screenshot({ path: 'artifacts/moonwarp-real-photo.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#tab-aug').click();
   await page.screenshot({ path: 'artifacts/moonaug-mobile.png', fullPage: true });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, 'mobile viewport should not overflow horizontally');
   assert.deepEqual(errors, [], 'no uncaught browser errors');
-  console.log(JSON.stringify({ passed: true, replay: true, replay_import: true, malformed_replay_recovery: true, deterministic: true, registration_loss_reduction_percent: improvement, mobile_overflow: false, browser_errors: errors }, null, 2));
+  console.log(JSON.stringify({ passed: true, replay: true, replay_import: true, replay_v2: true, real_rgba_gallery: true, malformed_replay_recovery: true, deterministic: true, registration_loss_reduction_percent: improvement, real_photo_multiscale_reduction_percent: realReduction, mobile_overflow: false, browser_errors: errors }, null, 2));
 } finally { await browser.close(); }

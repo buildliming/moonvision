@@ -32,6 +32,6 @@ fn run_pipeline() -> Unit raise {
 ///|
 fn main {
   run_pipeline() catch {
-    error => println("Pipeline failed: " + error.to_string())
+    error => abort("Pipeline failed: " + error.to_string())
   }
 }
