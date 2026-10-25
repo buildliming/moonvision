@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import platform
 
@@ -9,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from generate_references import DTYPE, SEED, mb_array, mb_double, mb_sample
+from generate_references import DTYPE, SEED, assert_numerically_equal, mb_array, mb_double, mb_sample
 
 
 def resize(image, mask, width, height):
@@ -148,6 +149,67 @@ def operation_source(operation):
 
 def points_source(points):
     return "[" + ", ".join(f'@moonaug.Keypoint::{{ x: {mb_double(x)}, y: {mb_double(y)}, label: {json.dumps(label)}, visible: {str(visible).lower()} }}' for x, y, label, visible in points) + "]"
+
+
+def quantized_pixel_mask(case):
+    """Track only bytes that can acquire cross-CPU uint8 rounding differences."""
+    source = case["input"]
+    mask = np.zeros((source["height"], source["width"], source["channels"]), dtype=bool)
+    quantizations = 0
+    for name, *args in case["operations"]:
+        height, width, channels = mask.shape
+        if name == "Resize":
+            w, h = args
+            if (w, h) != (width, height):
+                mask = np.ones((h, w, channels), dtype=bool)
+                quantizations += 1
+        elif name == "Pad":
+            left, top, right, bottom, _, _ = args
+            padded = np.zeros((height+top+bottom, width+left+right, channels), dtype=bool)
+            padded[top:top+height, left:left+width] = mask
+            mask = padded
+        elif name == "Crop":
+            x, y, w, h = args
+            mask = mask[y:y+h, x:x+w]
+        elif name == "HFlip":
+            mask = np.flip(mask, 1)
+        elif name == "VFlip":
+            mask = np.flip(mask, 0)
+        elif name == "Rotate90":
+            mask = np.rot90(mask, -args[0])
+        elif name in ("Brightness", "Contrast"):
+            mask = mask.copy()
+            mask[:, :, :min(channels, 3)] = True
+            quantizations += 1
+        else:
+            raise SystemExit(f"Unreviewed resolved operation in numerical raster check: {name}")
+    if quantizations > 1:
+        raise SystemExit("Multiple uint8 quantization stages require explicit intermediate references; do not accumulate a blanket pixel tolerance")
+    expected = case["expected"]
+    if mask.shape != (expected["height"], expected["width"], expected["channels"]):
+        raise SystemExit("Numerical raster provenance shape differs from expected image")
+    return mask.reshape(-1)
+
+
+def check_aug_numerically(fresh, stored):
+    """Apply declared byte tolerance to both raster-bearing case families only."""
+    checked = copy.deepcopy(stored)
+    for family in ("cases", "keypoint_cases"):
+        if len(fresh[family]) != len(checked[family]):
+            raise SystemExit(f"Augmentation reference case count changed: {family}")
+        for index, (new, old) in enumerate(zip(fresh[family], checked[family])):
+            allowed = quantized_pixel_mask(new)
+            new_pixels, old_pixels = new["expected"]["data"], old["expected"]["data"]
+            if len(new_pixels) != len(old_pixels) or len(new_pixels) != len(allowed):
+                raise SystemExit(f"Augmentation raster shape differs at {family}.{index}")
+            for pixel, (a, b, rounded) in enumerate(zip(new_pixels, old_pixels, allowed)):
+                if type(a) is not int or type(b) is not int or not (0 <= a <= 255 and 0 <= b <= 255) or abs(a-b) > int(rounded):
+                    raise SystemExit(f"Augmentation uint8 value differs at {family}.{index}.expected.data.{pixel}")
+            # Only the already-validated raster bytes are normalized for the
+            # common recursive comparator. Masks, labels, shapes, input bytes,
+            # fill values, point visibility and all metadata remain untouched.
+            old["expected"]["data"] = new_pixels
+    assert_numerically_equal(fresh, checked, "augmentation")
 
 
 def emit_aug(document):

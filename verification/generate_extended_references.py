@@ -311,7 +311,7 @@ def main():
     documents = [("extended_warp_reference.json", "warp", warp_document(), ROOT / "moonwarp" / "reference_extended_test.mbt", emit_warp)]
     # Augmentation reference construction lives separately so matrix/sampling
     # references do not depend on the augmentation implementation or its PRNG.
-    from extended_augmentation_reference import aug_document, emit_aug
+    from extended_augmentation_reference import aug_document, check_aug_numerically, emit_aug
     documents.append(("extended_augmentation_reference.json", "augmentation", aug_document(), ROOT / "moonaug" / "reference_extended_test.mbt", emit_aug))
     from extended_interop_reference import check_interop_numerically, emit_interop, interop_document
     documents.append(("extended_interop_reference.json", "interop", interop_document(), ROOT / "interop" / "reference_interop_test.mbt", emit_interop))
@@ -329,6 +329,8 @@ def main():
                         raise SystemExit(f'Explicit sampler grid changed: {new["name"]}')
             if kind == "interop":
                 check_interop_numerically(fresh, selected)
+            elif kind == "augmentation":
+                check_aug_numerically(fresh, selected)
             else:
                 assert_numerically_equal(fresh, selected, kind)
         elif args.check:
