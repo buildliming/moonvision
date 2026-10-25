@@ -1,0 +1,230 @@
+{
+  "version": 1,
+  "source_collection": "scikit-image 0.25.2",
+  "preparation": "Pillow 12.3.0, deterministic resize/crop; see tools/prepare_real_images.py",
+  "annotation_policy": "Tests add explicit geometric boxes, points and category masks; these are test probes, not hand-labeled semantic ground truths.",
+  "sources": {
+    "astronaut": {
+      "file": "astronaut.png",
+      "author": "NASA",
+      "license": "Public domain",
+      "source": "https://flic.kr/p/r9qvLn",
+      "category": "person",
+      "description": "NASA portrait of astronaut Eileen Collins",
+      "source_sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+      "original_size": [
+        512,
+        512
+      ],
+      "license_evidence": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.astronaut",
+      "distribution_url": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/astronaut.png"
+    },
+    "chelsea": {
+      "file": "chelsea.png",
+      "author": "Stefan van der Walt",
+      "license": "CC0-1.0",
+      "source": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.chelsea",
+      "category": "animal",
+      "description": "Chelsea the cat: fur, edges and low-contrast regions",
+      "source_sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+      "original_size": [
+        451,
+        300
+      ],
+      "license_evidence": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.chelsea",
+      "distribution_url": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/chelsea.png"
+    },
+    "coffee": {
+      "file": "coffee.png",
+      "author": "Rachel Michetti",
+      "license": "CC0-1.0",
+      "source": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.coffee",
+      "category": "objects",
+      "description": "Coffee cup, porcelain and wood texture",
+      "source_sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+      "original_size": [
+        600,
+        400
+      ],
+      "license_evidence": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.coffee",
+      "distribution_url": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/coffee.png"
+    },
+    "rocket": {
+      "file": "rocket.jpg",
+      "author": "SpaceX",
+      "license": "Public domain",
+      "source": "https://www.flickr.com/photos/spacexphotos/16511594820/",
+      "category": "outdoor",
+      "description": "DSCOVR launch, dark sky and high-contrast structures",
+      "source_sha256": "c2dd0de7c538df8d111e479619b129464d0269d0ae5fd18ca91d33a7fdfea95c",
+      "original_size": [
+        640,
+        427
+      ],
+      "license_evidence": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.rocket",
+      "distribution_url": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/rocket.jpg"
+    },
+    "grass": {
+      "file": "grass.png",
+      "author": "linolafett",
+      "license": "CC0-1.0",
+      "source": "https://www.deviantart.com/linolafett/art/Grass-01-434853879",
+      "category": "texture",
+      "description": "Grayscale natural grass texture",
+      "source_sha256": "b6b6022426b38936c43a4ac09635cd78af074e90f42ffa8227ac8b7452d39f89",
+      "original_size": [
+        512,
+        512
+      ],
+      "license_evidence": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.grass",
+      "distribution_url": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/grass.png"
+    },
+    "clock": {
+      "file": "clock_motion.png",
+      "author": "Stefan van der Walt",
+      "license": "Public domain",
+      "source": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.clock",
+      "category": "blurred",
+      "description": "Motion-blurred grayscale clock photograph",
+      "source_sha256": "f029226b28b642e80113d86622e9b215ee067a0966feaf5e60604a1e05733955",
+      "original_size": [
+        400,
+        300
+      ],
+      "license_evidence": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.clock",
+      "distribution_url": "https://github.com/scikit-image/scikit-image/blob/v0.25.2/skimage/data/clock_motion.png"
+    }
+  },
+  "fixtures": [
+    {
+      "id": "astronaut",
+      "file": "astronaut.png",
+      "source_id": "astronaut",
+      "category": "person",
+      "mode": "RGB",
+      "width": 192,
+      "height": 192,
+      "channels": 3,
+      "derivation": "aspect-preserving Lanczos thumbnail",
+      "sha256": "e45c3b265aefb4132465ec78f6f5261d0db7ae94f94608eda534ec142d599c7b",
+      "pixels_sha256": "d46543788d00b77327e8500a29c12c9ec9e460c7fd5e9b4fec9f25b99f0ea8d3"
+    },
+    {
+      "id": "chelsea",
+      "file": "chelsea.png",
+      "source_id": "chelsea",
+      "category": "animal",
+      "mode": "RGB",
+      "width": 224,
+      "height": 149,
+      "channels": 3,
+      "derivation": "aspect-preserving Lanczos thumbnail",
+      "sha256": "b5f3b6de6d653c46a92f1c3aef44afb0e8824eb90c4e4d9c7bca8c13cdf65679",
+      "pixels_sha256": "7c96773bd0e15c0ff90a2276d8561c74893cfdcd8e284bc99fc471f9c46f68bc"
+    },
+    {
+      "id": "coffee",
+      "file": "coffee.png",
+      "source_id": "coffee",
+      "category": "objects",
+      "mode": "RGB",
+      "width": 240,
+      "height": 160,
+      "channels": 3,
+      "derivation": "aspect-preserving Lanczos thumbnail",
+      "sha256": "1696dc1321e557910e47f1c5d5712dacae22f5f6d6827e1a03ed5a6e840d2ad4",
+      "pixels_sha256": "a62dc7e4ac2432fbe2af61387158c3b62041e12029738b06463f529e6ee43026"
+    },
+    {
+      "id": "rocket",
+      "file": "rocket.png",
+      "source_id": "rocket",
+      "category": "outdoor",
+      "mode": "RGB",
+      "width": 256,
+      "height": 171,
+      "channels": 3,
+      "derivation": "aspect-preserving Lanczos thumbnail",
+      "sha256": "945cd6e94914f476ca804a0fc0787f1ff516eb94325c3280469e8cf2c8ba0469",
+      "pixels_sha256": "8f704bab9f3cee91b7ceed93aa0eaa42f50e05a03df74a4fec57265eaa1fc771"
+    },
+    {
+      "id": "grass",
+      "file": "grass.png",
+      "source_id": "grass",
+      "category": "texture",
+      "mode": "L",
+      "width": 192,
+      "height": 192,
+      "channels": 1,
+      "derivation": "aspect-preserving Lanczos thumbnail",
+      "sha256": "0be136ca71608f0e9fd1f7bffe132ca60c7b0b2820b9343ffbf409c227b75eb0",
+      "pixels_sha256": "b30e666b365bbf49d351d1eac539e9fda51cad176b47f7a5ed74ecfb8e2b94d9"
+    },
+    {
+      "id": "clock",
+      "file": "clock.png",
+      "source_id": "clock",
+      "category": "blurred",
+      "mode": "L",
+      "width": 224,
+      "height": 168,
+      "channels": 1,
+      "derivation": "aspect-preserving Lanczos thumbnail",
+      "sha256": "6436218b6fa195028f07cd3ec2be50f1eb3510b456b0e976b262c8eaa9a460e5",
+      "pixels_sha256": "2328f5fafa2997bc95f11e0aadb6d6d7e843146677cd38c9879a68f9d2ea2798"
+    },
+    {
+      "id": "chelsea_alpha",
+      "file": "chelsea_alpha.png",
+      "source_id": "chelsea",
+      "category": "animal",
+      "mode": "RGBA",
+      "width": 160,
+      "height": 106,
+      "channels": 4,
+      "derivation": "photo with an explicitly synthetic alpha ramp; not a segmentation ground truth",
+      "sha256": "98ef44ce4faddcda525bde0282bcd19bd8ea5dcc9d3bab92b001eb3b1b3d7611",
+      "pixels_sha256": "033e2b68c12d18492132a48835717399a236f7b06d1f793f7d3fca86438ce18a"
+    },
+    {
+      "id": "astronaut_portrait",
+      "file": "astronaut_portrait.png",
+      "source_id": "astronaut",
+      "category": "person",
+      "mode": "RGB",
+      "width": 96,
+      "height": 192,
+      "channels": 3,
+      "derivation": "central 1:2 portrait crop",
+      "sha256": "a38eb3d6cba08908e78f67ed626977f7f81e720fcffac34fbf67c8e6216ada5d",
+      "pixels_sha256": "2b4aea2d52f0778c81ec09adfce6122914e8f378a8fb5c49d526fcb8383cb47a"
+    },
+    {
+      "id": "rocket_wide",
+      "file": "rocket_wide.png",
+      "source_id": "rocket",
+      "category": "outdoor",
+      "mode": "RGB",
+      "width": 256,
+      "height": 64,
+      "channels": 3,
+      "derivation": "4:1 outdoor crop",
+      "sha256": "379f718605062b69e81150501c5a86947568c2260955004cf55b0aaaad662861",
+      "pixels_sha256": "d213dc3b7606cd87aaf2d437af6897777cdc9cafabd4732b41d8833680b98f6c"
+    },
+    {
+      "id": "coffee_thumbnail",
+      "file": "coffee_thumbnail.png",
+      "source_id": "coffee",
+      "category": "objects",
+      "mode": "RGB",
+      "width": 17,
+      "height": 11,
+      "channels": 3,
+      "derivation": "very small real-photo thumbnail",
+      "sha256": "6a99ae3f9bb876de9ad610eaa5bac5978b4c595556901e00be4af0c7a9ee700f",
+      "pixels_sha256": "74269716581830a6a377015723d470b8a3204eeb833def494a74d590ee23ef53"
+    }
+  ]
+}
