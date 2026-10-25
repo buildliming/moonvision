@@ -7,9 +7,27 @@ import {
 }
 
 // Values
+pub fn denormalize(@moonwarp.Tensor, Array[Double], Array[Double]) -> @moonwarp.Tensor raise InteropError
+
 pub fn image_to_tensor(@moonaug.Image) -> @moonwarp.Tensor raise InteropError
 
+pub fn images_to_tensor(Array[@moonaug.Image]) -> @moonwarp.Tensor raise InteropError
+
+pub fn mask_to_tensor(Array[Int], Int, Int) -> @moonwarp.Tensor raise InteropError
+
+pub fn normalize(@moonwarp.Tensor, Array[Double], Array[Double]) -> @moonwarp.Tensor raise InteropError
+
+pub fn process_json(String) -> String
+
 pub fn tensor_to_image(@moonwarp.Tensor, batch_index? : Int) -> @moonaug.Image raise InteropError
+
+pub fn tensor_to_images(@moonwarp.Tensor) -> Array[@moonaug.Image] raise InteropError
+
+pub fn tensor_to_mask(@moonwarp.Tensor, batch_index? : Int) -> Array[Int] raise InteropError
+
+pub fn warp_extended(@moonaug.ExtendedSample, Array[Double], Int, Int, align_corners? : Bool, min_visibility? : Double, mask_fill? : Int) -> @moonaug.ExtendedSample raise InteropError
+
+pub fn warp_sample(@moonaug.Sample, Array[Double], Int, Int, align_corners? : Bool, min_visibility? : Double, mask_fill? : Int) -> @moonaug.Sample raise InteropError
 
 // Errors
 pub(all) suberror InteropError {

@@ -6,21 +6,47 @@ pub fn affine_grid(Array[Double], Int, Int, Int, align_corners? : Bool) -> Grid 
 
 pub fn affine_grid_backward(Grid, align_corners? : Bool) -> Array[Double] raise WarpError
 
-pub fn grid_sample(Tensor, Grid, align_corners? : Bool) -> Tensor raise WarpError
+pub fn build_image_pyramid(Tensor, levels? : Int, align_corners? : Bool) -> Array[Tensor] raise WarpError
 
-pub fn grid_sample_backward(Tensor, Grid, Tensor, align_corners? : Bool) -> SampleGrad raise WarpError
+pub fn compose_theta(Array[Double], Array[Double]) -> Array[Double] raise WarpError
+
+pub fn denormalize_point(Double, Double, Int, Int, align_corners? : Bool) -> (Double, Double) raise WarpError
+
+pub fn grid_sample(Tensor, Grid, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
+
+pub fn grid_sample_backward(Tensor, Grid, Tensor, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> SampleGrad raise WarpError
 
 pub fn identity_theta(Int) -> Array[Double] raise WarpError
 
+pub fn invert_theta(Array[Double], epsilon? : Double) -> Array[Double] raise WarpError
+
 pub fn mse_loss(Tensor, Tensor) -> Double raise WarpError
+
+pub fn normalize_pixel_point(Double, Double, Int, Int, align_corners? : Bool) -> (Double, Double) raise WarpError
+
+pub fn pixel_affine_to_theta(Array[Double], Int, Int, Int, Int, align_corners? : Bool) -> Array[Double] raise WarpError
 
 pub fn process_json(String) -> String
 
-pub fn register_affine(Tensor, Tensor, iterations? : Int, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool) -> Registration raise WarpError
+pub fn pyramid_downsample(Tensor, align_corners? : Bool) -> Tensor raise WarpError
 
-pub fn warp_affine(Tensor, Array[Double], Int, Int, align_corners? : Bool) -> Tensor raise WarpError
+pub fn register_affine(Tensor, Tensor, iterations? : Int, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool, padding? : PaddingMode) -> Registration raise WarpError
 
-pub fn warp_affine_backward(Tensor, Array[Double], Tensor, align_corners? : Bool) -> WarpGrad raise WarpError
+pub fn register_affine_multiscale(Tensor, Tensor, levels? : Int, iterations_per_level? : Int, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool, padding? : PaddingMode) -> PyramidRegistration raise WarpError
+
+pub fn resize_tensor(Tensor, Int, Int, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
+
+pub fn tensor_from_json(Json) -> Tensor raise WarpError
+
+pub fn tensor_to_json(Tensor) -> Json
+
+pub fn theta_to_pixel_affine(Array[Double], Int, Int, Int, Int, align_corners? : Bool) -> Array[Double] raise WarpError
+
+pub fn transform_points(Array[Double], Array[(Double, Double)], batch_index? : Int) -> Array[(Double, Double)] raise WarpError
+
+pub fn warp_affine(Tensor, Array[Double], Int, Int, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
+
+pub fn warp_affine_backward(Tensor, Array[Double], Tensor, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> WarpGrad raise WarpError
 
 // Errors
 pub(all) suberror WarpError {
@@ -28,17 +54,35 @@ pub(all) suberror WarpError {
 }
 
 // Types and methods
-pub struct Grid {
-  dims : Array[Int]
-  values : Array[Double]
-}
+type Grid
 pub fn Grid::data(Self) -> Array[Double]
 pub fn Grid::new(Array[Int], Array[Double]) -> Self raise WarpError
 pub fn Grid::shape(Self) -> Array[Int]
 
+pub(all) enum PaddingMode {
+  Zeros
+  Border
+  Reflection
+}
+
+pub(all) struct PyramidRegistration {
+  theta : Array[Double]
+  output : Tensor
+  levels : Array[RegistrationLevel]
+  initial_loss : Double
+  final_loss : Double
+}
+
 pub(all) struct Registration {
   theta : Array[Double]
   output : Tensor
+  losses : Array[Double]
+}
+
+pub(all) struct RegistrationLevel {
+  height : Int
+  width : Int
+  theta : Array[Double]
   losses : Array[Double]
 }
 
@@ -47,10 +91,12 @@ pub(all) struct SampleGrad {
   grid_grad : Grid
 }
 
-pub struct Tensor {
-  dims : Array[Int]
-  values : Array[Double]
+pub(all) enum SamplingMode {
+  Bilinear
+  Nearest
 }
+
+type Tensor
 pub fn Tensor::data(Self) -> Array[Double]
 pub fn Tensor::new(Array[Int], Array[Double]) -> Self raise WarpError
 pub fn Tensor::shape(Self) -> Array[Int]
