@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "buildliming/moonvision/moonwarp"
+package "shunge/moonvision/moonwarp"
 
 // Values
 pub fn affine_grid(Array[Double], Int, Int, Int, align_corners? : Bool) -> Grid raise WarpError

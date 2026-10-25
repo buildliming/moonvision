@@ -15,7 +15,7 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE = "buildliming/moonvision"
+MODULE = "shunge/moonvision"
 
 
 def main():

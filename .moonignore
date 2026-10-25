@@ -1,0 +1,14 @@
+# Publishing uses this file instead of .gitignore. Keep generated/private
+# files out even when they exist locally and are not tracked by Git.
+/_build/
+/_target/
+/target/
+/.mooncakes/
+/.venv/
+**/__pycache__/
+/artifacts/
+/web/moonvision.js
+/web/moonvision.js.map
+/tools/real_bridge_runner.mjs
+/项目申报书.md
+!/.moonignore

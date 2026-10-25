@@ -1,6 +1,6 @@
 import {
-  "buildliming/moonvision/moonaug" @aug,
-  "buildliming/moonvision/moonwarp" @warp,
+  "shunge/moonvision/moonaug" @aug,
+  "shunge/moonvision/moonwarp" @warp,
 }
 
 pkgtype(kind: "executable")

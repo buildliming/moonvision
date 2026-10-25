@@ -1,10 +1,10 @@
 # MoonAug
 
-Annotation-aware, reproducible image augmentation in pure MoonBit. This package is part of `buildliming/moonvision`; it has no third-party dependencies and no FFI.
+Annotation-aware, reproducible image augmentation in pure MoonBit. This package is part of `shunge/moonvision`; it has no third-party dependencies and no FFI.
 
 ## Quick start
 
-Import `buildliming/moonvision/moonaug` in your package configuration:
+Import `shunge/moonvision/moonaug` in your package configuration:
 
 ```moonbit
 let sample : @moonaug.Sample = {

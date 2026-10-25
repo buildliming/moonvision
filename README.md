@@ -48,13 +48,19 @@ python tools/serve_demo.py
 
 ### 作为 MoonBit 库使用
 
-仓库尚未发布到 Mooncakes；不要把 `moon add buildliming/moonvision` 当作目前可用的安装命令。在本仓库内的 `moon.pkg` 导入所需包即可：
+Mooncakes 包名为 [`shunge/moonvision`](https://mooncakes.io/docs/shunge/moonvision)，与 GitHub 仓库名分别使用各自平台的账号。安装固定版本：
+
+```text
+moon add shunge/moonvision@0.2.0
+```
+
+在消费项目的 `moon.pkg` 中导入所需包：
 
 ```moonbit
 import {
-  "buildliming/moonvision/moonaug",
-  "buildliming/moonvision/moonwarp",
-  "buildliming/moonvision/interop",
+  "shunge/moonvision/moonaug",
+  "shunge/moonvision/moonwarp",
+  "shunge/moonvision/interop",
 }
 ```
 

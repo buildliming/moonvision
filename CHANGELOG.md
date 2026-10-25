@@ -2,6 +2,8 @@
 
 ## 0.2.0 — 2026-10-25
 
+- Publish on Mooncakes as `shunge/moonvision`; keep the GitHub repository at `buildliming/moonvision`.
+- Audit the release archive in CI, retaining source, fixtures and attribution while excluding local delivery files.
 - Fix tiny-box area underflow/degenerate geometry and protect Tensor/Grid internal buffers from external mutation.
 - Add Pad, Letterbox, RandomResizedCrop, stable keypoints, ID-keyed batches and validated Replay v2; retain v1 compatibility and old random streams.
 - Add nearest/bilinear sampling with zeros/border/reflection padding and complete first-order gradients, robust affine matrix utilities and antialiased multiscale registration.

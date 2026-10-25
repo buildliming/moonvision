@@ -1,4 +1,4 @@
-name = "buildliming/moonvision"
+name = "shunge/moonvision"
 
 version = "0.2.0"
 

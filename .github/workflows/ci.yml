@@ -60,6 +60,8 @@ jobs:
           moon fmt
           moon info
           git diff --exit-code
+      - name: Audit Mooncakes archive
+        run: python tools/check_package.py
       - name: Independently recompute numerical references
         run: |
           python -m pip install -r verification/requirements.txt

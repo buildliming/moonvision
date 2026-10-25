@@ -1,6 +1,6 @@
 # MoonVision image/tensor and annotation interop
 
-Import `buildliming/moonvision/interop` to connect MoonAug's decoded pixels and annotations to MoonWarp's numeric operations. The original single-image functions remain compatible.
+Import `shunge/moonvision/interop` to connect MoonAug's decoded pixels and annotations to MoonWarp's numeric operations. The original single-image functions remain compatible.
 
 ```moonbit
 let tensor = @interop.image_to_tensor(augmented.sample.image)
@@ -82,6 +82,6 @@ const restored = JSON.parse(interop_json(JSON.stringify({
 })));
 ```
 
-Run `moon test -p buildliming/moonvision/interop` and repeat with `--target js`. Tests cover byte-exact batch round trips, normalization, full int32 category IDs, synchronized translation/rotation, clipped visibility, boundary roundoff, malformed JSON and resource limits. Independent PyTorch/NumPy fixtures additionally check raster sampling and forward annotation geometry.
+Run `moon test -p shunge/moonvision/interop` and repeat with `--target js`. Tests cover byte-exact batch round trips, normalization, full int32 category IDs, synchronized translation/rotation, clipped visibility, boundary roundoff, malformed JSON and resource limits. Independent PyTorch/NumPy fixtures additionally check raster sampling and forward annotation geometry.
 
 Run `moon run examples/pipeline` for a typed MoonAug → tensor → MoonWarp → image example. It flips an image with MoonAug, reflects it with MoonWarp, and verifies that the original pixels are restored.

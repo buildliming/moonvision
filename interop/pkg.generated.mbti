@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "buildliming/moonvision/interop"
+package "shunge/moonvision/interop"
 
 import {
-  "buildliming/moonvision/moonaug",
-  "buildliming/moonvision/moonwarp",
+  "shunge/moonvision/moonaug",
+  "shunge/moonvision/moonwarp",
 }
 
 // Values

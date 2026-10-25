@@ -1,7 +1,7 @@
 import {
-  "buildliming/moonvision/interop",
-  "buildliming/moonvision/moonaug" @aug,
-  "buildliming/moonvision/moonwarp" @warp,
+  "shunge/moonvision/interop",
+  "shunge/moonvision/moonaug" @aug,
+  "shunge/moonvision/moonwarp" @warp,
 }
 
 options(

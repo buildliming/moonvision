@@ -50,7 +50,7 @@ supplied floating-point coordinates, including ties-to-even at exact halves.
 
 ## Use from MoonBit
 
-Import `buildliming/moonvision/moonwarp` as `@moonwarp` in your package.
+Import `shunge/moonvision/moonwarp` as `@moonwarp` in your package.
 
 ```moonbit
 let image = @moonwarp.Tensor::new([1, 1, 2, 2], [1.0, 2.0, 3.0, 4.0])

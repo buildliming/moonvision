@@ -1,6 +1,6 @@
 import {
-  "buildliming/moonvision/moonaug",
-  "buildliming/moonvision/moonwarp",
+  "shunge/moonvision/moonaug",
+  "shunge/moonvision/moonwarp",
   "moonbitlang/core/math",
   "moonbitlang/core/json",
 }
