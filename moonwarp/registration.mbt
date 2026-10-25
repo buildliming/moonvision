@@ -5,11 +5,17 @@ pub fn mse_loss(left : Tensor, right : Tensor) -> Double raise WarpError {
     raise Invalid("MSE requires equal tensor shapes")
   }
   let mut sum = 0.0
+  let mut correction = 0.0
+  let count = left.values.length().to_double()
   for i in 0..<left.values.length() {
     let diff = left.values[i] - right.values[i]
-    sum = sum + diff * diff
+    // Divide before multiplying, so a finite mean need not overflow its sum.
+    let adjusted = diff / count * diff - correction
+    let next = sum + adjusted
+    correction = next - sum - adjusted
+    sum = next
   }
-  let loss = sum / left.values.length().to_double()
+  let loss = sum
   if !finite(loss) {
     raise Invalid("MSE overflow: rescale input samples")
   }
@@ -40,6 +46,7 @@ pub fn register_affine(
   learning_rate? : Double = 0.5,
   initial_theta? : Array[Double],
   align_corners? : Bool = false,
+  padding? : PaddingMode = Zeros,
 ) -> Registration raise WarpError {
   if input.dims[0] != target.dims[0] || input.dims[1] != target.dims[1] {
     raise Invalid("registration requires equal batch and channel dimensions")
@@ -70,6 +77,7 @@ pub fn register_affine(
     target.dims[2],
     target.dims[3],
     align_corners~,
+    padding~,
   )
   let mut loss = mse_loss(output, target)
   let losses = [loss]
@@ -80,6 +88,7 @@ pub fn register_affine(
         theta,
         grad_output,
         align_corners~,
+        padding~,
       ).theta_grad
     let mut norm_squared = 0.0
     for value in gradient {
@@ -104,6 +113,7 @@ pub fn register_affine(
         target.dims[2],
         target.dims[3],
         align_corners~,
+        padding~,
       )
       let candidate_loss = mse_loss(candidate_output, target)
       if candidate_loss < loss {
