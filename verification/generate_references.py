@@ -225,7 +225,12 @@ def aug_references():
 def mb_double(value):
     value = float(value)
     assert math.isfinite(value)
-    return repr(value)
+    literal = repr(value)
+    if "e" in literal:
+        mantissa, exponent = literal.split("e")
+        if "." not in mantissa:
+            literal = mantissa + ".0e" + exponent
+    return literal
 
 
 def mb_array(values, kind="double"):
