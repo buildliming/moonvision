@@ -56,3 +56,57 @@ performance, antialiasing, higher-order-gradient, or complete PyTorch claim.
 `warp_reference.json` and `augmentation_reference.json` are reviewable inputs
 and expected outputs. `moonwarp/reference_pytorch_test.mbt` and
 `moonaug/reference_geometry_test.mbt` exercise only public APIs.
+
+## Extended APIs
+
+The original acceptance fixtures above stay separate from the additional
+sampler, augmentation, and interop references:
+
+```powershell
+python verification/generate_extended_references.py
+python verification/generate_extended_references.py --check-numerical
+python verification/check_private_tensor_fields.py
+```
+
+`extended_warp_reference.json` covers bilinear/nearest × zeros/border/reflection
+× both corner conventions, with forward/input/grid/theta gradients, exact
+nearest ties, reflection cycles, singleton axes, and independent NumPy batch
+matrix conversion/composition/inversion. Smooth grid/theta gradients are
+audited using central finite differences; knot/tie cases compare the PyTorch
+derivative convention directly.
+
+`extended_augmentation_reference.json` covers per-channel padding and categorical
+fills, odd centered letterboxing with/without upscaling, tiny positive boxes,
+and keypoint visibility through crop/pad/resize. RandomResizedCrop is checked
+against all 60 possible crop windows of the small input image. The runtime's
+resolved crop chooses an independent NumPy/PyTorch reference table entry;
+the oracle does not implement MoonBit's random generator. Separate tests check
+determinism, fallback, replay, and sample-ID invariance when batching/reordering.
+
+`extended_interop_reference.json` checks bilinear image pixels and nearest
+categorical masks against PyTorch, and boxes/keypoints against an independently
+inverted homogeneous edge-coordinate matrix. It also checks multi-batch NCHW
+packing, per-channel normalization, and exact int32 mask IDs.
+
+Both generation scripts support exact `--check` in the recorded environment
+and numerical `--check-numerical` across operating systems with identical
+dependency versions. Numerical mode recomputes references, enforces numerical
+bounds and exact structure/categories, then regenerates the checked-in tests
+from the checked-in JSON to prove their correspondence.
+
+The private-field probe uses an isolated temporary module under `_build`, first
+compiles a public-API control, then requires all four external Tensor/Grid array
+field-access probes to fail. It never leaves intentionally invalid source in a
+normal repository package and does not exercise unbounded allocations.
+
+## Real pixels on every backend
+
+`python verification/generate_real_image_references.py --check-numerical` verifies
+the offline manifest/file/decoded-pixel hashes, reduces all ten photo fixtures
+to 10×8 with Pillow BOX, and independently recomputes PyTorch references.
+The generated `moonwarp/reference_real_images_test.mbt` embeds those actual
+pixels and expected forward/input/theta gradients, so normal `moon test` runs
+them on native, JS, Wasm, and Wasm GC without a runtime image codec or Python.
+Each photo checks bilinear/reflection plus exact nearest/border using identical
+explicit grids. This small backend regression complements the separate full
+photo bridge runner; it does not replace its image sizes or codec checks.

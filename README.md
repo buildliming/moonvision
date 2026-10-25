@@ -8,9 +8,9 @@ MoonVision 把视觉数据处理与模型中的空间采样放在一个有明确
 
 | 包 | 用途 | 已实现 |
 | --- | --- | --- |
-| [`moonaug`](moonaug/README.md) | 检测、分割数据增强 | 图像/mask/bbox 同步，裁剪、缩放、翻转、90°旋转、亮度/对比度，概率管线，按 seed/sample ID 确定采样，版本化 JSON replay |
-| [`moonwarp`](moonwarp/README.md) | 可微采样与图像配准 | NCHW 张量、仿射网格、双线性零填充采样、输入/grid/theta 解析梯度、六参数仿射配准、两种 align_corners |
-| [`interop`](interop/README.md) | 连接两个核心模块 | HWC 字节图像与归一化 NCHW 张量转换、灰度/RGB/RGBA、多 batch 选择 |
+| [`moonaug`](moonaug/README.md) | 检测、分割与关键点增强 | 图像/mask/bbox/关键点同步，Pad、Letterbox、RandomResizedCrop、基础变换，按 ID 确定采样与批处理，Replay v1/v2 |
+| [`moonwarp`](moonwarp/README.md) | 可微采样与图像配准 | 双线性/最近邻 × 零/边缘/反射填充，完整一阶梯度，矩阵组合/求逆/坐标转换，单尺度与抗混叠多尺度配准 |
+| [`interop`](interop/README.md) | 连接完整视觉流程 | 图像/张量/类别 mask 转换，批次与逐通道归一化，仿射变换同步图像、mask、框和关键点 |
 
 ## 快速运行
 
@@ -23,6 +23,7 @@ moon check --target all --deny-warn
 moon test
 moon run examples/main
 moon run examples/pipeline
+moon run examples/annotated
 ```
 
 正常构建和 MoonBit 测试无需 Python、NumPy 或 PyTorch，也没有第三方 Mooncakes 依赖。
@@ -38,8 +39,8 @@ python tools/serve_demo.py
 
 打开 `http://127.0.0.1:8765`。图片只在本机浏览器处理，计算在 Web Worker 中运行。
 
-- **标注同步增强**：运行内置带标注样本、编辑检测框、上传本地图片、改变随机种子、导入/导出重放记录，验证像素和标注的精确重放。
-- **可微图像配准**：改变旋转和平移，观察从单位矩阵开始学习六个仿射参数、损失曲线和配准结果。
+- **标注同步增强**：切换十组真实照片样本、编辑检测框、上传本地图片、选择 Letterbox/随机缩放裁剪、改变随机种子、导入/导出重放记录。
+- **可微图像配准**：切换照片、边界模式和单/多尺度优化，观察六个仿射参数、损失曲线和配准结果。
 
 ![标注同步增强演示](docs/images/moonaug.png)
 
@@ -53,6 +54,7 @@ python tools/serve_demo.py
 import {
   "buildliming/moonvision/moonaug",
   "buildliming/moonvision/moonwarp",
+  "buildliming/moonvision/interop",
 }
 ```
 
@@ -63,6 +65,7 @@ import {
 ```text
 node tools/moonvision.mjs augment examples/requests/augment.json
 node tools/moonvision.mjs warp examples/requests/warp.json
+node tools/moonvision.mjs interop examples/requests/annotated.json
 node tools/test_bridge.mjs
 ```
 
@@ -70,11 +73,13 @@ node tools/test_bridge.mjs
 
 ## 正确性与复现
 
-- **60 个 MoonBit 测试**在 `wasm-gc`、`wasm`、`js`、`native` 后端验证；每个后端单独执行。
+- **180 个 MoonBit 测试**在 `wasm-gc`、`wasm`、`js`、`native` 后端验证；每个后端单独执行，包含真实照片像素回归。
 - 独立 CPU PyTorch float64 参考覆盖采样前向、输入/grid/theta 梯度、多 batch/channel、非方形与单像素维度、边界和两种角点约定。
 - 中央有限差分校验平滑位置的梯度；不可微边界单独对照 PyTorch 的取值约定。
 - NumPy/PyTorch 图像参考覆盖增强结果、框几何、整数 mask、alpha 保留、组合变换和重放。
 - Node.js 桥接的 **29 项端到端检查**验证 JSON 传输、参考数值、错误输入和重放。当前参考下采样与梯度最大绝对误差为 `8.881784197001252e-16`；不代表所有输入的误差上限。
+- **6 张原始真实照片、10 组离线样本、173 次真实图接口检查**：人物、动物、物体、室外、纹理、模糊，覆盖 L/RGB/RGBA、竖幅/宽幅/缩略图。像素、掩码、标注、梯度和重放均有独立对照。[真实图说明与结果](docs/real-images.md)
+- 跨包负向编译验证 Tensor/Grid 内部数组无法被访问或修改；资源预算、非有限数、JSON 严格整数与退化几何均有回归。
 
 ```text
 python tools/verify.py
@@ -85,6 +90,7 @@ python tools/verify.py
 ```text
 python -m pip install -r verification/requirements.txt
 python verification/generate_references.py --check
+python tools/verify.py --references --real-images
 ```
 
 详见 [复现说明](docs/reproduction.md)、[独立参考说明](verification/README.md) 和 [验收记录](docs/validation.md)。
@@ -93,9 +99,15 @@ python verification/generate_references.py --check
 
 MoonAug 处理已解码的灰度/RGB/RGBA 像素和非负整数类别 mask，框使用连续半开区间 xyxy。颜色变换保留 alpha；缩放不执行抗锯齿、线性光转换或预乘 alpha。重放记录保存已解析参数和输入尺寸，不保存源图像身份。
 
-MoonWarp 首版支持二维、双线性、零填充和一阶梯度。配准是局部优化，依赖纹理及初始位置；不保证任意图像都能对齐。张量、请求文本和操作数量都有明确上限，详见包文档。
+MoonWarp 支持二维、最近邻/双线性、三种填充和一阶梯度。配准是局部优化，依赖纹理及初始位置；不保证任意图像都能对齐。张量、请求/响应文本和操作数量都有明确上限，详见包文档。
 
-本版本不包含通用训练框架、GPU、任意透视增强、关键点增强或图像编解码器。浏览器上传图片使用浏览器解码能力；MoonBit 核心接收像素数组。
+本版本不包含通用训练框架、GPU、任意透视变换、三维采样、高阶梯度或图像编解码器。浏览器上传图片使用浏览器解码能力；MoonBit 核心接收像素数组。
+
+## 核心规模与兼容性
+
+`python tools/count_core.py` 可复核核心规模：约 4500 行库源码，其中约 3800 行非空非注释内容。只统计 `moonaug/`、`moonwarp/`、`interop/` 的实现，排除测试、生成接口、图片数据、Python、CLI 与浏览器代码。
+
+0.2 读取旧 Replay v1，含 Pad 的记录使用 v2；旧 `Sample` 结构及默认采样行为保留。Tensor/Grid 的内部数组已封装，原先直接读写 `.dims`/`.values` 的调用需改用 `shape()`/`data()` 与校验构造函数。JSON 新增明确资源预算。详见 [迁移说明](docs/migration-0.2.md)。
 
 ## 项目结构
 

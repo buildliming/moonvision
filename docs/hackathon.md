@@ -14,6 +14,8 @@ MoonVision：纯 MoonBit 可复现视觉增强与可微几何变换工具库。
 
 模型中的空间采样需要对坐标与图像反传，普通 resize/rotate 不能提供这些梯度。MoonWarp 实现仿射网格、双线性采样及解析梯度，通过小型图像配准任务展示可学习变换。interop 把两个模块连接成实际可运行的像素处理流程。
 
+0.2 补齐标注同步 Letterbox/随机缩放裁剪、关键点、批处理与 Replay v2，增加最近邻/边界模式、矩阵工具和多尺度配准。真实照片与派生样本共十组，来源许可与像素哈希随仓库保存；四个后端均有真实像素回归。
+
 ## 与已有生态的关系
 
 公开生态中的 millow/pixelforge 已覆盖较多图像处理与基础增强，MoonXi-net/MbTorch 已有训练或张量框架。本项目的范围集中在联合标注的变换语义、版本化重放以及可微坐标采样；不宣称“首个 MoonBit 图像库”或“首个深度学习框架”，也不把公开检索未发现同题当作原创性证明。
@@ -22,9 +24,10 @@ MoonVision：纯 MoonBit 可复现视觉增强与可微几何变换工具库。
 
 1. `moon run examples/main`：JSON 外部接口示例。
 2. `moon run examples/pipeline`：typed API 联合流程。
-3. `python tools/verify.py --references`：完整构建、测试与参考校验。
+3. `python tools/verify.py --references --real-images`：完整构建、测试、独立参考和真实图校验。
 4. `python tools/serve_demo.py --build`：交互演示。
-5. [数值设计](architecture.md)、[复现说明](reproduction.md)、[验收记录](validation.md)。
+5. `moon run examples/annotated`：图像、mask、框、关键点与归一化联合流程。
+6. [数值设计](architecture.md)、[复现说明](reproduction.md)、[验收记录](validation.md)、[真实图结果](real-images.md)。
 
 ## 许可证、来源与 AI 辅助
 

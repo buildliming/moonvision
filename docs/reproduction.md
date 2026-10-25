@@ -26,6 +26,7 @@ moon test --target js --deny-warn
 moon test --target native --deny-warn
 moon run examples/main
 moon run examples/pipeline
+moon run examples/annotated
 ```
 
 这部分不需要 Python 数值包。原生 C 编译器必须能正常启动，JS 测试需要 Node.js。
@@ -55,6 +56,10 @@ Windows 激活：`.venv\Scripts\Activate.ps1`。Linux 激活：`source .venv/bin
 python -m pip install -r verification/requirements.txt
 python verification/generate_references.py --check
 python verification/generate_references.py --check-numerical
+python verification/generate_extended_references.py --check-numerical
+python verification/generate_real_image_references.py --check-numerical
+python verification/check_private_tensor_fields.py
+python verification/test_real_images.py
 ```
 
 `--check` 适合同一参考环境的字节级重建。跨操作系统或 CPU 的 BLAS/FMA 末位差异可能造成字节不同；`--check-numerical` 保持结构和整数严格一致，按已声明容差比较数值，并重新执行独立有限差分审计。CI 使用后者。
@@ -82,7 +87,7 @@ node tools/browser_check.mjs
 ## 一条命令完成验证
 
 ```text
-python tools/verify.py --references
+python tools/verify.py --references --real-images
 ```
 
-此命令对核心检查、四个后端、可运行示例、JS 编译产物和参考重建依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。
+此命令对核心检查、四个后端、可运行示例、JS 编译产物、三套参考重建、负向编译和真实图片依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。
