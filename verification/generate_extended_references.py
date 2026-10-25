@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import platform
 import shutil
 import subprocess
+from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +27,69 @@ from generate_references import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def sampling_branch_margin(grid_values, image_shape, mode, padding, align):
+    """Exact-rational distance (pixels) from a nonconstant sampling branch edge."""
+    margins = []
+    for point in np.asarray(grid_values).reshape(-1, 2):
+        for coordinate, size in zip(point, (image_shape[3], image_shape[2])):
+            if size == 1:
+                continue
+            normalized = Fraction.from_float(float(coordinate))
+            scale = Fraction(size-1 if align else size, 2)
+            pixel = normalized*scale + Fraction(size-1, 2)
+            if padding == "reflection":
+                low = Fraction(0) if align else Fraction(-1, 2)
+                span = Fraction(size-1 if align else size)
+                phase = (pixel-low) % (2*span)
+                pixel = low + min(phase, 2*span-phase)
+            if padding in ("border", "reflection") and (pixel <= 0 or pixel >= size-1):
+                margins.append(min(abs(pixel), abs(pixel-(size-1))))
+                continue
+            if padding == "zeros":
+                low, high = (Fraction(-1), Fraction(size)) if mode == "bilinear" else (Fraction(-1, 2), Fraction(2*size-1, 2))
+                if pixel <= low or pixel >= high:
+                    margins.append(min(abs(pixel-low), abs(pixel-high)))
+                    continue
+            offset = Fraction(0) if mode == "bilinear" else Fraction(1, 2)
+            remainder = (pixel-offset) % 1
+            margins.append(min(remainder, 1-remainder))
+    return float(min(margins))
+
+
+def exact_boundary_grid(align):
+    """Use dyadic pixels and divisors so every intended knot is exact on CPU.
+
+    In false mode dimensions are powers of two; in true mode size-1 is a power
+    of two. A former width=3/false construction used 2/3 and let FMA choose the
+    opposite derivative at the last pixel. These small rational operations are
+    exact under either association, including integer knots and half-way ties.
+    """
+    height, width = (3, 5) if align else (2, 4)
+    q = Fraction
+    points = [
+        (q(-1, 2), q(3, 8)), (q(1, 2), q(3, 8)), (q(3, 2), q(3, 8)), (q(2*width-1, 2), q(3, 8)),
+        (q(-21, 4), q(-7, 2)), (q(35, 4), q(17, 4)),
+        (q(1, 4), q(-1, 2)), (q(1, 4), q(1, 2)), (q(1, 4), q(2*height-1, 2)),
+        (q(0), q(0)), (q(width-1), q(height-1)), (q(-1), q(-1)), (q(width), q(height)),
+        (q(-1, 2), q(-1, 2)), (q(2*width-1, 2), q(2*height-1, 2)),
+    ]
+    grid = []
+    for point in points:
+        normalized_point = []
+        for pixel, size in zip(point, (width, height)):
+            normalized = 2*pixel/(size-1)-1 if align else (2*pixel+1)/size-1
+            value = float(normalized)
+            assert Fraction.from_float(value) == normalized, "boundary grid must be exactly binary representable"
+            separate = (value+1)*(size-1)/2 if align else ((value+1)*size-1)/2
+            reassociated = value*((size-1)/2) + (size-1)/2 if align else value*(size/2)+(size-1)/2
+            fused = math.fma(value, (size-1 if align else size)/2, (size-1)/2)
+            assert separate == float(pixel) == reassociated == fused, "boundary unnormalization must be exact under separate and fused arithmetic"
+            normalized_point.append(value)
+        grid.append(normalized_point)
+    pattern = np.array([[1., 3., -2., 6., -4.], [5., 7., 4., -1., 8.], [-3., 2., 9., 0., 11.]])
+    return pattern[:height, :width], np.asarray(grid)
 
 
 def sampling_case(name, image_values, image_shape, grid_values, grid_shape, mode, padding, align, audit=False):
@@ -42,6 +107,9 @@ def sampling_case(name, image_values, image_shape, grid_values, grid_shape, mode
         "grid_grad": flattened(grid_grad),
     }
     if audit:
+        margin = sampling_branch_margin(grid_values, image_shape, mode, padding, align)
+        assert margin >= 1e-4, (name, "sampling branch margin", margin)
+        case["minimum_branch_margin_pixels"] = margin
         def grid_loss(values):
             result = F.grid_sample(image.detach(), tensor(values, grid_shape), mode=mode, padding_mode=padding, align_corners=align)
             return (result * upstream).sum().item()
@@ -56,6 +124,8 @@ def affine_case(name, values, shape, theta_values, output_shape, mode, padding, 
     image = tensor(values, shape, grad=True)
     theta = tensor(theta_values, (shape[0], 2, 3), grad=True)
     grid = reference_affine_grid(theta, output_shape, align)
+    margin = sampling_branch_margin(flattened(grid), shape, mode, padding, align)
+    assert margin >= 1e-4, (name, "affine sampling branch margin", margin)
     output = F.grid_sample(image, grid, mode=mode, padding_mode=padding, align_corners=align)
     upstream = torch.linspace(.91, -.57, output.numel(), dtype=DTYPE).reshape(output.shape)
     input_grad, theta_grad = torch.autograd.grad(output, (image, theta), upstream)
@@ -65,6 +135,7 @@ def affine_case(name, values, shape, theta_values, output_shape, mode, padding, 
         "output_shape": list(output_shape), "output": flattened(output),
         "grad_output": flattened(upstream), "input_grad": flattened(input_grad),
         "theta_grad": flattened(theta_grad),
+        "minimum_branch_margin_pixels": margin,
     }
     if mode == "bilinear":
         def theta_loss(values):
@@ -134,21 +205,20 @@ def matrix_cases():
 def warp_document():
     values = np.random.default_rng(SEED + 1).normal(size=(2, 2, 3, 4))
     grid = np.array([[-.81, -.73], [-.11, .23], [.67, .61], [1.23, -.23], [-1.21, 1.19], [2.17, -2.23], [-.61, .47], [.17, -.37], [.83, -.81], [-1.37, .07], [.43, 1.31], [-2.41, 2.33]])
-    points = np.array([[-.5, .37], [.5, .37], [1.5, .37], [2.5, .37], [-5.2, -3.4], [8.7, 4.2], [.2, -.5], [.2, .5], [.2, 1.5], [0., 0.], [2., 1.], [-1., -1.], [3., 2.], [-.5, -.5], [2.5, 1.5]])
-    theta = [.87, .13, .37, -.17, .79, -.29, .91, -.23, -.47, .18, .83, .31]
+    # Offset translations from an old nearest half-way tie in true-corner mode.
+    # Every affine sample is audited below for a >=1e-4-pixel branch margin.
+    theta = [.87, .13, .373, -.17, .79, -.287, .91, -.23, -.467, .18, .83, .313]
     samples, affines = [], []
     for mode in ("bilinear", "nearest"):
         for padding in ("zeros", "border", "reflection"):
             for align in (False, True):
                 suffix = f"{mode}_{padding}_{str(align).lower()}"
                 samples.append(sampling_case("multi_batch_" + suffix, values, values.shape, grid, (2, 2, 3, 2), mode, padding, align, audit=True))
-                # These points deliberately include integer knots and nearest
-                # half-way ties; compare PyTorch conventions, not finite differences.
-                if align:
-                    boundary = points * np.array([1., 2.]) - 1.
-                else:
-                    boundary = (points + .5) * np.array([2/3, 1.]) - 1.
-                samples.append(sampling_case("knots_ties_cycles_" + suffix, [1., 3., -2., 5., 7., 4.], (1, 1, 2, 3), boundary, (1, 3, 5, 2), mode, padding, align))
+                # Intentional discontinuities use exact dyadic normalized grids;
+                # smooth non-square cases above retain the original dimensions.
+                boundary_image, boundary = exact_boundary_grid(align)
+                boundary_shape = (1, 1, *boundary_image.shape)
+                samples.append(sampling_case("knots_ties_cycles_" + suffix, boundary_image, boundary_shape, boundary, (1, 3, 5, 2), mode, padding, align))
                 samples.append(sampling_case("singleton_" + suffix, [2., -3.], (1, 2, 1, 1), [-1000., 1000., -.4, .3, 1.2, -.7], (1, 1, 3, 2), mode, padding, align))
                 affines.append(affine_case("affine_chain_" + suffix, values, values.shape, theta, (2, 2, 2, 3), mode, padding, align))
     return {
@@ -157,6 +227,8 @@ def warp_document():
             "device": "cpu", "dtype": "float64", "oracle": "torch.nn.functional.grid_sample + affine_grid + autograd; NumPy homogeneous matrix algebra; grouped 2D convolution + interpolate for pyramids",
             "absolute_tolerance": 1e-9, "finite_difference_tolerance": 2e-8,
             "pixel_matrix_direction": "output pixel-center index -> input pixel-center index",
+            "boundary_coordinate_policy": "exact dyadic normalized grids: false H2W4, true H3W5; rational exactness and both unnormalization associations audited",
+            "smooth_coordinate_policy": "sampling and affine-chain branch margins are at least 0.0001 input pixels",
         },
         "sample_cases": samples, "affine_cases": affines, "matrix_cases": matrix_cases(),
         "pyramid_cases": pyramid_cases(),
@@ -249,6 +321,12 @@ def main():
         fresh_text = json.dumps(fresh, indent=2, allow_nan=False) + "\n"
         if args.check_numerical:
             selected = json.loads(fixture_path.read_text(encoding="utf-8"))
+            if kind == "warp":
+                if len(fresh["sample_cases"]) != len(selected["sample_cases"]):
+                    raise SystemExit("Sampler case count changed")
+                for new, old in zip(fresh["sample_cases"], selected["sample_cases"]):
+                    if np.asarray(new["grid"], dtype="<f8").tobytes() != np.asarray(old["grid"], dtype="<f8").tobytes():
+                        raise SystemExit(f'Explicit sampler grid changed: {new["name"]}')
             if kind == "interop":
                 check_interop_numerically(fresh, selected)
             else:

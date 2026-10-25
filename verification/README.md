@@ -75,6 +75,14 @@ matrix conversion/composition/inversion. Smooth grid/theta gradients are
 audited using central finite differences; knot/tie cases compare the PyTorch
 derivative convention directly.
 
+Intentional knot/tie cases use binary-exact normalized coordinates and compatible
+image dimensions. Fraction arithmetic verifies the intended pixel positions;
+separate, reassociated and fused unnormalization must all agree exactly. General
+smooth and affine-chain cases retain ordinary dimensions and require a measured
+branch margin of at least `1e-4` input pixels. Numerical checking also requires
+explicit reference grids to be bit-identical, so cross-platform rounding cannot
+silently switch the derivative branch while passing a coordinate tolerance.
+
 `extended_augmentation_reference.json` covers per-channel padding and categorical
 fills, odd centered letterboxing with/without upscaling, tiny positive boxes,
 and keypoint visibility through crop/pad/resize. RandomResizedCrop is checked
