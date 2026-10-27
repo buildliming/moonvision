@@ -24,7 +24,7 @@ let image = @interop.tensor_to_image(output, batch_index=0)
 | `mask_to_tensor(mask, width, height)` | Pack an HW integer category mask as `[1,1,H,W]`; preserve IDs exactly, including `2147483647`. No division by 255. |
 | `tensor_to_mask(tensor, batch_index=0)` | Select one single-channel batch item. Reject fractional, negative and out-of-int32 categories instead of rounding. |
 
-Normalization requires one finite mean and finite positive standard deviation per channel. RGBA needs four explicit parameters. Nonfinite arithmetic results raise `InteropError`. Every returned array is independently owned; inputs are unchanged.
+Normalization requires one finite mean and finite positive standard deviation per channel. RGBA needs four explicit parameters. Overflowing intermediate differences/products use equivalent scaled arithmetic when the final result remains finite; nonfinite final results raise `InteropError`. Every returned array is independently owned; inputs are unchanged.
 
 ```moonbit
 let packed = @interop.images_to_tensor(images)
@@ -51,7 +51,7 @@ let moved = @interop.warp_sample(sample, theta, sample.image.height, sample.imag
 
 - `theta` contains one row-major six-coefficient **normalized output-to-input** affine map, matching MoonWarp. Images use bilinear interpolation and zero padding. Masks use nearest interpolation and zero padding; a separately sampled coverage mask applies `mask_fill` only outside the source, preserving valid category zero.
 - Boxes and keypoints use pixel-edge coordinates: the center of pixel `(x,y)` is `(x+0.5,y+0.5)`. Geometry converts edges to pixel-center indices, applies the inverse sampling matrix, then converts back. This handles different input/output sizes and both corner conventions.
-- Each transformed box becomes the enclosing axis-aligned box, clipped to the output rectangle. `min_visibility` is the clipped AABB area divided by the un-clipped transformed AABB area, in `[0,1]`. It does not measure the visible area of a rotated polygon. Empty boxes are dropped; surviving labels and order are retained.
+- Each transformed box becomes the enclosing axis-aligned box, clipped to the output rectangle. Outward roundoff snaps to the boundary before visibility filtering, with per-axis tolerance `1e-12 * min(transformed_box_extent, output_dimension)`. This preserves complete image boxes at `min_visibility=1` without absorbing substantial clipping of tiny boxes. `min_visibility` is the clipped AABB area divided by the un-clipped transformed AABB area, in `[0,1]`. It does not measure the visible area of a rotated polygon. Empty boxes are dropped; surviving labels and order are retained.
 - Keypoints keep their labels and indices. Previously invisible points remain invisible; other points become invisible outside the closed output rectangle. For previously visible points, outward roundoff within `1e-12 * max(out_width,out_height)` is snapped to the boundary. Larger excursions retain their coordinates and become invisible.
 - Singular or ill-conditioned matrices and nonfinite geometry are rejected. `align_corners=true` rejects any singleton input/output spatial axis because the coordinate conversion is not invertible. The default `false` supports singleton axes.
 - Input/output tensors each obey the 1,048,576-value limit. The NHW2 grid separately obeys the same limit, so at most 524,288 output pixels are allowed even for gray images. Shapes, resource budgets and annotation arithmetic are checked before raster output allocation.

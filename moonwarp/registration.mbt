@@ -4,18 +4,32 @@ pub fn mse_loss(left : Tensor, right : Tensor) -> Double raise WarpError {
   if left.dims != right.dims {
     raise Invalid("MSE requires equal tensor shapes")
   }
+  let mut scale = 0.0
+  for i in 0..<left.values.length() {
+    let diff = (left.values[i] - right.values[i]).abs()
+    if !finite(diff) {
+      raise Invalid("MSE overflow: rescale input samples")
+    }
+    if diff > scale {
+      scale = diff
+    }
+  }
+  if scale == 0.0 {
+    return 0.0
+  }
   let mut sum = 0.0
   let mut correction = 0.0
   let count = left.values.length().to_double()
   for i in 0..<left.values.length() {
-    let diff = left.values[i] - right.values[i]
-    // Divide before multiplying, so a finite mean need not overflow its sum.
-    let adjusted = diff / count * diff - correction
+    let diff = (left.values[i] - right.values[i]) / scale
+    // Scale before squaring: neither a large sum nor tiny per-value means
+    // should overflow/underflow when the final mean is representable.
+    let adjusted = diff * diff - correction
     let next = sum + adjusted
     correction = next - sum - adjusted
     sum = next
   }
-  let loss = sum
+  let loss = scale * (scale * (sum / count))
   if !finite(loss) {
     raise Invalid("MSE overflow: rescale input samples")
   }

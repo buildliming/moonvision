@@ -77,6 +77,14 @@ fn mapped_boxes(
       top = top.min(y)
       bottom = bottom.max(y)
     }
+    // Correct outward roundoff without absorbing real clipping of tiny boxes.
+    // Each axis uses a relative tolerance capped by the output dimension.
+    let tolerance_x = (right - left).min(width.to_double()) * 1.0e-12
+    let tolerance_y = (bottom - top).min(height.to_double()) * 1.0e-12
+    left = snap_boundary(left, width.to_double(), tolerance_x)
+    right = snap_boundary(right, width.to_double(), tolerance_x)
+    top = snap_boundary(top, height.to_double(), tolerance_y)
+    bottom = snap_boundary(bottom, height.to_double(), tolerance_y)
     let x_min = left.max(0.0).min(width.to_double())
     let y_min = top.max(0.0).min(height.to_double())
     let x_max = right.max(0.0).min(width.to_double())

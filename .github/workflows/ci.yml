@@ -77,6 +77,7 @@ jobs:
           python tools/build_web.py
           node tools/test_bridge.mjs
           python verification/test_real_images.py
+          python verification/test_stress_images.py
           python tools/count_core.py
       - name: Install optional browser test tooling
         if: ${{ !cancelled() }}
@@ -98,4 +99,5 @@ jobs:
           path: |
             artifacts/*.png
             artifacts/real-images-report.json
+            artifacts/stress-images-report.json
           if-no-files-found: ignore

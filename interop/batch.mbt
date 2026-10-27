@@ -116,10 +116,27 @@ fn normalize_values(
     for c in 0..<shape[1] {
       let offset = (n * shape[1] + c) * plane
       for p in 0..<plane {
+        let value = values[offset + p]
         values[offset + p] = if inverse {
-          values[offset + p] * std[c] + mean[c]
+          let product = value * std[c]
+          if product >= -1.7976931348623157e308 &&
+            product <= 1.7976931348623157e308 {
+            product + mean[c]
+          } else {
+            // The product may overflow while cancellation with a finite mean
+            // leaves a representable sum. Halve before the product and sum.
+            (value * (std[c] * 0.5) + mean[c] * 0.5) * 2.0
+          }
         } else {
-          (values[offset + p] - mean[c]) / std[c]
+          let difference = value - mean[c]
+          if difference >= -1.7976931348623157e308 &&
+            difference <= 1.7976931348623157e308 {
+            difference / std[c]
+          } else {
+            // Opposite signs can overflow the subtraction even when division
+            // by a large standard deviation brings the result into range.
+            value / std[c] - mean[c] / std[c]
+          }
         }
       }
     }

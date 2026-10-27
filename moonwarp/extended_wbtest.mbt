@@ -60,10 +60,68 @@ test "all padding and interpolation modes handle huge finite coordinates" {
 }
 
 ///|
+test "clipped and zero-upstream bilinear gradients avoid inactive overflow" {
+  let input = Tensor::new([1, 1, 2, 2], [1.0e308, -1.0e308, 1.0e308, -1.0e308])
+  for padding in [Border, Reflection] {
+    for align_corners in [false, true] {
+      let grid = Grid::new([1, 1, 1, 2], [-1.0, -1.0])
+      let upstream = Tensor::new([1, 1, 1, 1], [1.0])
+      let gradient = grid_sample_backward(
+        input,
+        grid,
+        upstream,
+        padding~,
+        align_corners~,
+      )
+      assert_eq(gradient.input_grad.data(), [1.0, 0.0, 0.0, 0.0])
+      assert_eq(gradient.grid_grad.data(), [0.0, 0.0])
+    }
+  }
+  let grid = Grid::new([1, 1, 1, 2], [0.0, 0.0])
+  let upstream = Tensor::new([1, 1, 1, 1], [0.0])
+  for padding in [Zeros, Border, Reflection] {
+    let gradient = grid_sample_backward(input, grid, upstream, padding~)
+    assert_eq(gradient.input_grad.data(), [0.0, 0.0, 0.0, 0.0])
+    assert_eq(gradient.grid_grad.data(), [0.0, 0.0])
+  }
+}
+
+///|
 test "scaled MSE remains finite when its unnormalized sum would overflow" {
   let left = Tensor::new([1, 1, 1, 1024], Array::make(1024, 1.0e153))
   let right = Tensor::new([1, 1, 1, 1024], Array::make(1024, 0.0))
   near(mse_loss(left, right) / 1.0e306, 1.0)
+}
+
+///|
+test "MSE retains subnormal means without underflowing each contribution" {
+  let left = Tensor::new([1, 1, 256, 256], Array::make(65536, 1.0e-160))
+  let right = Tensor::new([1, 1, 256, 256], Array::make(65536, 0.0))
+  near(mse_loss(left, right) / 1.0e-320, 1.0)
+  near(mse_loss(right, left) / 1.0e-320, 1.0)
+  assert_eq(mse_loss(left, left), 0.0)
+}
+
+///|
+test "MSE scales sparse high-dynamic-range residuals and rejects true overflow" {
+  let data = Array::make(1024, 1.0e-160)
+  data[0] = 1.0e155
+  let left = Tensor::new([1, 1, 1, 1024], data)
+  let right = Tensor::new([1, 1, 1, 1024], Array::make(1024, 0.0))
+  near(mse_loss(left, right) / 9.765625e306, 1.0)
+  assert_true(
+    try {
+      ignore(
+        mse_loss(
+          Tensor::new([1, 1, 1, 1], [1.0e155]),
+          Tensor::new([1, 1, 1, 1], [0.0]),
+        ),
+      )
+      false
+    } catch {
+      Invalid(_) => true
+    },
+  )
 }
 
 ///|

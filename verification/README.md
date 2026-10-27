@@ -118,3 +118,21 @@ them on native, JS, Wasm, and Wasm GC without a runtime image codec or Python.
 Each photo checks bilinear/reflection plus exact nearest/border using identical
 explicit grids. This small backend regression complements the separate full
 photo bridge runner; it does not replace its image sizes or codec checks.
+
+## Degraded photos and complex boundaries
+
+`python verification/test_stress_images.py` reuses the real-photo bridge and
+independent augmentation oracle on 100 deterministic degraded/degenerate inputs.
+It covers Gaussian/defocus/motion blur, noise, low contrast, occlusion, flat
+colors, singleton axes, and single pixels, including grayscale/RGB/RGBA photos.
+Every case checks all twelve mode/padding/corner combinations and their input
+and grid gradients against CPU PyTorch float64 using identical coordinates.
+It also checks combined random augmentation/replay, exact adjacent maximal
+int32 mask IDs, channel-wise normalized batch round trips, identity annotations,
+and process recovery after malformed nested JSON fields. Selected cases check
+single/multiscale registration output/theta/loss consistency and monotonicity;
+ambiguous images are not required to recover a unique ground-truth affine.
+Source hashes are checked against the offline manifest; generated-pixel hashes
+and dependency versions are recorded in `artifacts/stress-images-report.json`.
+This runner is part of CI and
+`tools/verify.py --real-images`; details are in `docs/real-images.md`.

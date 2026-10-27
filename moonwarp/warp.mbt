@@ -312,8 +312,14 @@ pub fn grid_sample_backward(
                   x0 + 1,
                   g * dx * dy,
                 )
-                gx = gx + g * ((b - a) * (1.0 - dy) + (e - d) * dy)
-                gy = gy + g * ((d - a) * (1.0 - dx) + (e - b) * dx)
+                // A clipped axis or zero upstream has exactly zero derivative.
+                // Avoid overflowing unused differences before multiplying by 0.
+                if g != 0.0 && xscale != 0.0 {
+                  gx = gx + g * ((b - a) * (1.0 - dy) + (e - d) * dy)
+                }
+                if g != 0.0 && yscale != 0.0 {
+                  gy = gy + g * ((d - a) * (1.0 - dx) + (e - b) * dx)
+                }
               }
               grid_values[gi] = gx * xscale
               grid_values[gi + 1] = gy * yscale

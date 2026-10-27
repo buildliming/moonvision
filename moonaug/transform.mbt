@@ -63,6 +63,22 @@ fn remap(
 }
 
 ///|
+fn nearest_source_index(
+  index : Int,
+  input_size : Int,
+  output_size : Int,
+) -> Int {
+  // Keep exact center ties on their upper class. The pixel budget bounds
+  // the numerator below 2^49, so multiplication is exact in Double; dividing
+  // a precomputed size ratio instead can round an integer center downward.
+  @math.floor(
+    (2 * index + 1).to_double() *
+    input_size.to_double() /
+    (2 * output_size).to_double(),
+  ).to_int()
+}
+
+///|
 fn resize_sample(sample : Sample, width : Int, height : Int) -> Sample {
   let image = sample.image
   let channels = image.channels
@@ -75,9 +91,7 @@ fn resize_sample(sample : Sample, width : Int, height : Int) -> Sample {
     let y0 = @math.floor(fy).to_int().min(image.height - 1)
     let y1 = (y0 + 1).min(image.height - 1)
     let wy = fy - y0.to_double()
-    let my = @math.floor((y.to_double() + 0.5) * ratio_y)
-      .to_int()
-      .min(image.height - 1)
+    let my = nearest_source_index(y, image.height, height)
     for x in 0..<width {
       let fx = ((x.to_double() + 0.5) * ratio_x - 0.5).max(0.0)
       let x0 = @math.floor(fx).to_int().min(image.width - 1)
@@ -102,9 +116,7 @@ fn resize_sample(sample : Sample, width : Int, height : Int) -> Sample {
         )
       }
       if mask is Some(out) && sample.mask is Some(input) {
-        let mx = @math.floor((x.to_double() + 0.5) * ratio_x)
-          .to_int()
-          .min(image.width - 1)
+        let mx = nearest_source_index(x, image.width, width)
         out[y * width + x] = input[my * image.width + mx]
       }
     }

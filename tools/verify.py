@@ -33,6 +33,7 @@ def main():
         run(sys.executable, "verification/check_private_tensor_fields.py")
     if args.real_images:
         run(sys.executable, "verification/test_real_images.py")
+        run(sys.executable, "verification/test_stress_images.py")
     print("All requested checks passed.")
 
 

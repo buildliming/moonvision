@@ -59,6 +59,8 @@ The calling function must allow `raise AugError` or catch the error. No input-va
 
 Color factors must be finite and in `[0, 16]`. RGBA alpha remains unchanged by color transforms. Spatial resizing interpolates all four RGBA channels independently in their stored byte space; it does not perform alpha premultiplication or linear-light conversion.
 
+Mask resize evaluates the integer pixel-center numerator before dividing by the output size. Exact ties select the upper source index, including awkward size ratios such as 2→49; mask class boundaries remain independent of floating-point ratio rounding.
+
 Every `Step` has an independent application probability in `[0, 1]`. Operation parameter ranges are validated even for zero-probability steps; shape-dependent fit checks apply when a step executes. A crop retains a box if its nonzero clipped area divided by its pre-crop area is at least `min_visibility`. This policy is applied at each crop, not relative to the original box before the entire pipeline.
 
 `Padding` fields are `left`, `top`, `right`, `bottom`, `fill: Array[Byte]`, and `mask_value`. A single-value fill does **not** broadcast to RGB/RGBA. Replay snapshots the fill array; changing the original pipeline's fill later does not alter an already returned replay.

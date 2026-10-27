@@ -71,3 +71,20 @@ moon test moonwarp --target native
 每张图另外生成一组 10×8 的真实像素参考，嵌入 MoonBit 黑盒测试，覆盖反射双线性前向、输入/theta 梯度、nearest/border 与精确类别选择。这些测试直接随四个后端运行，不依赖 MoonBit 图像解码器、Python 或网络。
 
 本次完整真实图验收：增强字节误差最多 1；连续采样最大绝对误差约 `5.56e-14`；梯度最大绝对误差约 `4.1e-16`。这些是所列图片与参数的实测，不能外推为全部输入的统一界限。
+
+## 退化图像与复杂边界回归
+
+```text
+python tools/build_web.py
+python verification/test_stress_images.py
+```
+
+此回归复用现有真实图的持久 Node 桥接与独立标注核对函数，不增加运行时依赖。每张离线样本先核验文件和解码像素 SHA-256，再缩到 23×17，确定性地产生十种输入：高斯模糊、圆盘失焦、对角运动模糊、低对比、固定种子传感器噪声、常量颜色、矩形遮挡、单行、单列、单像素。RGBA 的颜色退化保留原 alpha。原始模糊时钟照片也参与派生，共 100 组。
+
+- 以相同显式 grid 对照 CPU PyTorch float64，覆盖 bilinear/nearest × zeros/border/reflection × 两种角点模式；前向、输入梯度与 grid 梯度都核对，多 batch 内容不同，避免批次步长错误被相同数据掩盖。nearest 要求精确一致。坐标与填充语义依据 [PyTorch grid_sample](https://docs.pytorch.org/docs/2.12/generated/torch.nn.functional.grid_sample.html)。
+- 组合 49×49 resize、随机缩放裁剪、Pad、负向四分之一旋转和概率翻转，核对框、关键点、mask 与图像，重复调用与序列化 replay 必须一致。mask 包含相邻的 `2147483646`/`2147483647`，填充值也使用最大 int32。
+- 逐通道均值与标准差不同，核对双图 batch 的独立归一化数值及精确字节往返；单位仿射保持标注和类别不变。标注路径对 `align_corners=true` 单像素轴返回结构化错误。
+- 对三种模糊、低对比、常量及单像素轴输入运行单尺度/多尺度配准。独立重采样返回 theta，核验输出、初末 MSE 和每层损失单调性。平坦或模糊图可能无法唯一确定几何关系，因此不以恢复指定 theta 为通过条件。
+- 在三种 JSON 接口中注入 null、错误类型和损坏嵌套结构，错误后紧接有效请求，要求同一进程继续返回原有正确结果。
+
+结果写入 `artifacts/stress-images-report.json`，包含每例输入像素哈希、误差、配准初末损失和依赖版本。`python tools/verify.py --real-images` 和 CI 均执行此脚本。测试验证图像处理和数值约定，不衡量识别准确率，也不保证所有模糊图像的配准成功。

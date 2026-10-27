@@ -24,6 +24,8 @@ and Wasm GC. Python/PyTorch is used only to regenerate independent test fixtures
 - Nearest sampling scatters input gradients into selected pixels and has zero
   grid/theta gradients. Bilinear border/reflection gradients include the
   coordinate mapping derivative; the derivative is zero at clipping endpoints.
+  Clipped axes and zero upstream gradients skip inactive differences, avoiding
+  spurious overflow from finite samples with extreme dynamic range.
 - At integer pixel knots, bilinear derivatives are not unique. MoonWarp follows
   the floor-selected right/bottom convention used by PyTorch's CPU reference.
   Central finite differences are checked away from these nondifferentiable knots.
@@ -117,6 +119,9 @@ optimizer: distant poses, unrelated images, and symmetric patterns can require
 better initialization. Use normalized image values, usually `[0,1]`.
 The optional `padding` defaults to `Zeros`; registration always uses bilinear
 sampling because nearest coordinates have zero gradients.
+`mse_loss` scales residuals before compensated square accumulation, preserving
+representable subnormal means and finite means whose unscaled sum would overflow.
+An unrepresentable final loss still raises `WarpError::Invalid`.
 
 ## Image pyramids and multiscale registration
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1 — 2026-10-27
+
+- Fix categorical resize ties (for example 2 to 49 pixels) by computing exact pixel-center indices, preserving int32 mask labels on both axes.
+- Retain representable subnormal MSE values and avoid overflowing inactive bilinear gradient differences on clipped axes or zero upstream gradients.
+- Stabilize channel normalization/denormalization when an intermediate overflows but the final result is finite; keep rejecting genuinely nonfinite results.
+- Preserve fully visible boxes at `min_visibility=1` when affine resize roundoff moves a boundary just outside the image, with tolerance limited by each box's size so real clipping of tiny boxes is retained.
+- Add 11 MoonBit regression tests and a deterministic independent stress runner covering 100 degraded real-photo/shape cases, all sampling modes and gradients, replay, int32 masks, normalized batches, malformed-input recovery, and local registration consistency. Run it in CI and with `tools/verify.py --real-images`.
+- Compatibility: replay schemas and random streams are unchanged; old replays at affected resize ratios now produce corrected categorical pixels.
+
 ## 0.2.0 — 2026-10-25
 
 - Publish on Mooncakes as `shunge/moonvision`; keep the GitHub repository at `buildliming/moonvision`.
