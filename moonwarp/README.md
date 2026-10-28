@@ -197,7 +197,11 @@ returns `input_grad` and `grid_grad`.
 Dimensions are positive and at most 4096; each tensor/grid has at most 1,048,576
 values. Shape products are checked before allocation, and all numeric inputs and
 computed results must be finite. Arbitrarily distant finite grid coordinates
-produce zeros without an unsafe float-to-int conversion. Registration is limited
+produce zeros without an unsafe float-to-int conversion. Bilinear backward
+sampling skips inactive clipped axes, zero upstream derivatives, and zero-weight
+row/column differences, so unused extreme values do not invalidate an otherwise
+finite edge gradient. Active
+nonfinite gradient results are still rejected. Registration is limited
 to 16,384 input/output values, 0–500 iterations, and 16,000,000 output
 value-iterations. Its learning rate must be in `(0,10]`. JSON requests are limited
 to 16,000,000 characters. JSON tensors and grids have an additional 262,144-value

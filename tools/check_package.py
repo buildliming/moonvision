@@ -10,10 +10,14 @@ REQUIRED = {
     "moon.mod", "LICENSE", "README.md",
     "moonaug/moon.pkg", "moonwarp/moon.pkg", "interop/moon.pkg",
     "web/samples/manifest.json", "web/samples/ATTRIBUTION.md",
+    "examples/real_pipeline.py", "examples/real_pipeline.mjs",
+    "tools/moonvision_client.mjs", "tools/test_cli.mjs",
+    "docs/improvement-review.md",
 }
 FORBIDDEN = {
     "web/moonvision.js", "web/moonvision.js.map",
     "tools/real_bridge_runner.mjs", "项目申报书.md",
+    "AGENTS.md",
 }
 
 

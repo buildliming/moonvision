@@ -315,10 +315,22 @@ pub fn grid_sample_backward(
                 // A clipped axis or zero upstream has exactly zero derivative.
                 // Avoid overflowing unused differences before multiplying by 0.
                 if g != 0.0 && xscale != 0.0 {
-                  gx = gx + g * ((b - a) * (1.0 - dy) + (e - d) * dy)
+                  // At an exact row, the next row has zero weight and must
+                  // not contribute an overflowing difference times zero.
+                  let difference = if dy == 0.0 {
+                    b - a
+                  } else {
+                    (b - a) * (1.0 - dy) + (e - d) * dy
+                  }
+                  gx = gx + g * difference
                 }
                 if g != 0.0 && yscale != 0.0 {
-                  gy = gy + g * ((d - a) * (1.0 - dx) + (e - b) * dx)
+                  let difference = if dx == 0.0 {
+                    d - a
+                  } else {
+                    (d - a) * (1.0 - dx) + (e - b) * dx
+                  }
+                  gy = gy + g * difference
                 }
               }
               grid_values[gi] = gx * xscale

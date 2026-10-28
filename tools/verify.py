@@ -26,12 +26,14 @@ def main():
     run("moon", "run", "examples/annotated")
     run(sys.executable, "tools/build_web.py")
     run("node", "tools/test_bridge.mjs")
+    run("node", "tools/test_cli.mjs")
     if args.references:
         run(sys.executable, "verification/generate_references.py", "--check-numerical")
         run(sys.executable, "verification/generate_extended_references.py", "--check-numerical")
         run(sys.executable, "verification/generate_real_image_references.py", "--check-numerical")
         run(sys.executable, "verification/check_private_tensor_fields.py")
     if args.real_images:
+        run(sys.executable, "examples/real_pipeline.py")
         run(sys.executable, "verification/test_real_images.py")
         run(sys.executable, "verification/test_stress_images.py")
     print("All requested checks passed.")

@@ -87,6 +87,82 @@ test "clipped and zero-upstream bilinear gradients avoid inactive overflow" {
 }
 
 ///|
+test "bilinear edge gradients ignore overflowing differences with zero weight" {
+  let upstream = Tensor::new([1, 1, 1, 1], [1.0])
+  for align_corners in [false, true] {
+    let edge = if align_corners { -1.0 } else { -0.5 }
+    let scale = if align_corners { 0.5 } else { 1.0 }
+    for padding in [Border, Reflection] {
+      for horizontal in [false, true] {
+        let input = Tensor::new(
+          [1, 1, 2, 2],
+          if horizontal {
+            [1.0, 2.0, -1.0e308, 1.0e308]
+          } else {
+            [1.0, -1.0e308, 2.0, 1.0e308]
+          },
+        )
+        let grid = Grid::new(
+          [1, 1, 1, 2],
+          if horizontal {
+            [0.0, edge]
+          } else {
+            [edge, 0.0]
+          },
+        )
+        assert_eq(grid_sample(input, grid, padding~, align_corners~).data(), [
+          1.5,
+        ])
+        let gradient = grid_sample_backward(
+          input,
+          grid,
+          upstream,
+          padding~,
+          align_corners~,
+        )
+        assert_eq(
+          gradient.input_grad.data(),
+          if horizontal {
+            [0.5, 0.5, 0.0, 0.0]
+          } else {
+            [0.5, 0.0, 0.5, 0.0]
+          },
+        )
+        assert_eq(
+          gradient.grid_grad.data(),
+          if horizontal {
+            [scale, 0.0]
+          } else {
+            [0.0, scale]
+          },
+        )
+      }
+    }
+  }
+}
+
+///|
+test "bilinear gradients still reject overflow in an active difference" {
+  let grid = Grid::new([1, 1, 1, 2], [0.0, 0.0])
+  let upstream = Tensor::new([1, 1, 1, 1], [1.0])
+  for
+    data in [
+      [-1.0e308, 1.0e308, -1.0e308, 1.0e308],
+      [-1.0e308, -1.0e308, 1.0e308, 1.0e308],
+    ] {
+    let input = Tensor::new([1, 1, 2, 2], data)
+    assert_true(
+      try {
+        ignore(grid_sample_backward(input, grid, upstream, padding=Border))
+        false
+      } catch {
+        Invalid(_) => true
+      },
+    )
+  }
+}
+
+///|
 test "scaled MSE remains finite when its unnormalized sum would overflow" {
   let left = Tensor::new([1, 1, 1, 1024], Array::make(1024, 1.0e153))
   let right = Tensor::new([1, 1, 1, 1024], Array::make(1024, 0.0))

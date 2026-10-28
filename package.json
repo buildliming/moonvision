@@ -5,6 +5,8 @@
   "scripts": {
     "build:web": "python tools/build_web.py",
     "test:bridge": "node tools/test_bridge.mjs",
+    "test:cli": "node tools/test_cli.mjs",
+    "example:real": "python examples/real_pipeline.py",
     "demo": "python tools/serve_demo.py"
   }
 }

@@ -36,11 +36,24 @@ moon run examples/annotated
 ```text
 python tools/build_web.py
 node tools/test_bridge.mjs
+node tools/test_cli.mjs
 node tools/moonvision.mjs augment examples/requests/augment.json
 node tools/moonvision.mjs warp examples/requests/warp.json
 ```
 
 `web/moonvision.js` 来自本地 MoonBit 构建，不手写也不提交；从干净检出必须先生成。
+
+可复用的 Node 调用层位于 `tools/moonvision_client.mjs`；`invoke(mode, request)` 返回解析后的响应对象，`processJson(mode, text)` 返回 JSON 字符串，均为异步函数。调用方必须检查 `ok`。纯模块导入不会读取标准输入或启动 CLI。
+
+## 真实照片预处理案例
+
+```text
+python -m pip install Pillow==12.3.0
+python tools/build_web.py
+python examples/real_pipeline.py
+```
+
+案例只依赖 Pillow、Node 和编译后的 MoonBit，不依赖 PyTorch/NumPy。默认三张仓库照片，输出到 `artifacts/real-pipeline/`；可用 `--samples` 选择清单中的 RGB 照片、`--output` 指定输出目录。运行前核验文件和解码像素哈希，运行中核对逆序 ID 重放、独立归一化公式及像素往返。具体产物和使用边界见 [案例与改进分析](improvement-review.md)。
 
 ## 重新生成独立参考
 
@@ -90,4 +103,4 @@ node tools/browser_check.mjs
 python tools/verify.py --references --real-images
 ```
 
-此命令对核心检查、四个后端、可运行示例、JS 编译产物、三套参考重建、负向编译和真实图片依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。
+此命令对核心检查、四个后端、可运行示例、JS 编译产物、CLI 流传输、三套参考重建、负向编译、真实照片预处理案例和真实图片依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。

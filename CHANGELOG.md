@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2 — 2026-10-28
+
+- Avoid evaluating zero-weight neighboring differences in bilinear grid gradients, so unused extreme pixels cannot invalidate a finite boundary gradient.
+- Add an importable Node client and bound CLI input before parsing; return structured file/runtime errors and respect output backpressure while preserving JSON-lines recovery.
+- Add an offline real-photo batch example with checked source hashes, ID-matched replay, independently verified normalized NCHW tensors, byte-exact image round trips, and saved provenance and previews.
+- Run CLI regressions and the real-photo workflow in verification/CI; clarify that the compatible random crop origin generator uses bounded modulo sampling.
+
 ## 0.2.1 — 2026-10-27
 
 - Fix categorical resize ties (for example 2 to 49 pixels) by computing exact pixel-center indices, preserving int32 mask labels on both axes.

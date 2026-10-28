@@ -2,6 +2,8 @@
 
 仓库包含 **6 张原照片、10 组离线样本**。每个 PNG、原始来源文件和解码像素都记录 SHA-256，测试不联网下载。
 
+要直接复用文件到模型输入的完整流程，可运行 `python examples/real_pipeline.py`。该案例只需要 Pillow、Node 和已构建的 MoonBit bridge，输出来源记录、Replay、归一化 NCHW 张量和对照拼图；不需要 PyTorch/NumPy。参见 [案例与改进分析](improvement-review.md)。
+
 ![真实照片与派生样本](images/real-fixtures.png)
 
 ## 图片种类与来源
