@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 — 2026-10-28
+
+- Exclude presentation screenshots from the Mooncakes archive; retain all offline photo fixtures, source, examples and numerical tests. README images continue to use pinned GitHub URLs.
+- Enforce a 1 MiB project archive budget in the release audit. The 0.2.2 upload was rejected with HTTP 413 and was not published to Mooncakes; its Git tag remains unchanged.
+
 ## 0.2.2 — 2026-10-28
 
 - Avoid evaluating zero-weight neighboring differences in bilinear grid gradients, so unused extreme pixels cannot invalidate a finite boundary gradient.

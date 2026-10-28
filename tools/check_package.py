@@ -6,6 +6,9 @@ import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+# A project budget, not a claimed registry limit: keep source releases small
+# after a 2.55 MB archive was rejected by the publishing service with HTTP 413.
+MAX_ARCHIVE_BYTES = 1048576
 REQUIRED = {
     "moon.mod", "LICENSE", "README.md",
     "moonaug/moon.pkg", "moonwarp/moon.pkg", "interop/moon.pkg",
@@ -43,6 +46,8 @@ def main():
     files = set(entries)
     tracked = set(subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode("utf-8").split("\0"))
     problems = []
+    if archive.stat().st_size > MAX_ARCHIVE_BYTES:
+        problems.append(f"archive exceeds the {MAX_ARCHIVE_BYTES}-byte project budget; keep presentation assets on GitHub")
     if len(entries) != len(files):
         problems.append("archive contains duplicate file entries")
     for path in sorted(files - tracked):
@@ -50,11 +55,11 @@ def main():
     for path in sorted(REQUIRED - files):
         problems.append("required archive file missing: " + path)
     for path in sorted(files):
-        if path in FORBIDDEN or path.startswith("artifacts/"):
+        if path in FORBIDDEN or path.startswith(("artifacts/", "docs/images/")):
             problems.append("forbidden archive file: " + path)
     if problems:
         raise RuntimeError("Package audit failed:\n" + "\n".join(problems))
-    print(f"Package audit passed: {metadata['name']}@{metadata['version']} ({len(files)} tracked files)")
+    print(f"Package audit passed: {metadata['name']}@{metadata['version']} ({len(files)} tracked files, {archive.stat().st_size:,} bytes)")
     return 0
 
 

@@ -12,4 +12,7 @@
 /tools/real_bridge_runner.mjs
 /项目申报书.md
 /AGENTS.md
+# README screenshots are served from the pinned GitHub tag. Keep actual
+# offline image fixtures in web/samples for the examples and numerical tests.
+/docs/images/
 !/.moonignore
