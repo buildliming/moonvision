@@ -2,13 +2,13 @@
 
 ## 环境
 
-本次验证使用 Windows、MoonBit `0.10.14+7d59c7ec9`（`moon 0.1.20260920`）、Node.js `24.15.0`、Python `3.13.9`。native 后端还需要本机 C 编译器；本次为 MinGW GCC 8.1.0。
+本次验证在 Windows 执行 wasm-gc/wasm/js 及数值与浏览器回归，在 WSL Ubuntu 24.04（GCC 13.3.0）执行 Native 检查、构建、测试和三个示例。使用 MoonBit `0.10.20+65efd5b93`（`moon 0.1.20261104`）、Node.js `24.15.0`、Python `3.13.9`。Native 在 Linux 需要 C 编译器。该工具链的 Windows Native 后端要求 MSVC Build Tools 和 Windows SDK，并应在 Developer PowerShell 中运行。
 
-CI 使用同版本的官方 Linux 工具链归档，安装入口为 MoonBit 官方脚本：
+CI 分别验证上述固定版本和官方 `latest` 稳定工具链，逐次记录 `moon version --all`。固定环境通过官方脚本安装。
 
 ```sh
 curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o install-moonbit.sh
-bash install-moonbit.sh '0.10.14+7d59c7ec9'
+bash install-moonbit.sh '0.10.20+65efd5b93'
 export PATH="$HOME/.moon/bin:$PATH"
 ```
 
@@ -19,7 +19,9 @@ Windows 可按 [官方安装页](https://www.moonbitlang.com/download/) 配置�
 ```text
 git clone --branch default https://github.com/buildliming/moonvision.git
 cd moonvision
+moon version --all
 moon check --target all --deny-warn
+moon build --target all --deny-warn
 moon test --target wasm-gc --deny-warn
 moon test --target wasm --deny-warn
 moon test --target js --deny-warn
@@ -103,4 +105,4 @@ node tools/browser_check.mjs
 python tools/verify.py --references --real-images
 ```
 
-此命令对核心检查、四个后端、可运行示例、JS 编译产物、CLI 流传输、三套参考重建、负向编译、真实照片预处理案例和真实图片依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。
+此命令先记录工具链版本，再对四个后端分别执行类型检查、构建、测试和三个可运行示例，然后对 JS 编译产物、CLI 流传输、三套参考重建、负向编译、真实照片预处理案例和真实图片依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。

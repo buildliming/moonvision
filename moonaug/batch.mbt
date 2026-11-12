@@ -45,7 +45,7 @@ fn check_batch_output(records : Array[Replay]) -> Unit raise AugError {
 fn plan_batch(
   items : Array[BatchItem],
   pipeline : Array[Step],
-  seed : Int,
+  seed : Int32,
   min_visibility : Double,
 ) -> Array[Replay] raise AugError {
   validate_batch(items)
@@ -124,8 +124,8 @@ fn execute_batch(
 pub fn augment_batch(
   items : Array[BatchItem],
   pipeline : Array[Step],
-  seed : Int,
-  min_visibility? : Double = 0.0,
+  seed : Int32,
+  min_visibility~ : Double = 0.0,
 ) -> Array[BatchResult] raise AugError {
   execute_batch(items, plan_batch(items, pipeline, seed, min_visibility))
 }

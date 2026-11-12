@@ -4,10 +4,10 @@
 /// For a unit output dimension, the base coordinate is zero under both modes.
 pub fn affine_grid(
   theta : Array[Double],
-  batch : Int,
-  out_height : Int,
-  out_width : Int,
-  align_corners? : Bool = false,
+  batch : Int32,
+  out_height : Int32,
+  out_width : Int32,
+  align_corners~ : Bool = false,
 ) -> Grid raise WarpError {
   validate_theta(theta, batch)
   let shape = [batch, out_height, out_width, 2]
@@ -29,7 +29,7 @@ pub fn affine_grid(
 }
 
 ///|
-fn check_sample(input : Tensor, grid : Grid) -> Array[Int] raise WarpError {
+fn check_sample(input : Tensor, grid : Grid) -> Array[Int32] raise WarpError {
   if input.dims[0] != grid.dims[0] {
     raise Invalid("input and grid batch dimensions differ")
   }
@@ -45,7 +45,7 @@ fn check_sample(input : Tensor, grid : Grid) -> Array[Int] raise WarpError {
 ///|
 fn sampling_coordinate(
   value : Double,
-  size : Int,
+  size : Int32,
   align_corners : Bool,
   padding : PaddingMode,
 ) -> (Double, Double) {
@@ -103,7 +103,7 @@ fn sampling_coordinate(
 // Only used after bounding coordinates to the small image support interval.
 
 ///|
-fn nearest_pixel(value : Double) -> Int {
+fn nearest_pixel(value : Double) -> Int32 {
   let lower = @double.floor(value).to_int()
   let fraction = value - lower.to_double()
   if fraction < 0.5 {
@@ -124,9 +124,9 @@ fn nearest_pixel(value : Double) -> Int {
 pub fn grid_sample(
   input : Tensor,
   grid : Grid,
-  align_corners? : Bool = false,
-  mode? : SamplingMode = Bilinear,
-  padding? : PaddingMode = Zeros,
+  align_corners~ : Bool = false,
+  mode~ : SamplingMode = Bilinear,
+  padding~ : PaddingMode = Zeros,
 ) -> Tensor raise WarpError {
   let shape = check_sample(input, grid)
   let channels = shape[1]
@@ -195,10 +195,10 @@ pub fn grid_sample(
 fn add_input_grad(
   values : Array[Double],
   input : Tensor,
-  n : Int,
-  c : Int,
-  y : Int,
-  x : Int,
+  n : Int32,
+  c : Int32,
+  y : Int32,
+  x : Int32,
   gradient : Double,
 ) -> Unit {
   let height = input.dims[2]
@@ -217,9 +217,9 @@ pub fn grid_sample_backward(
   input : Tensor,
   grid : Grid,
   grad_output : Tensor,
-  align_corners? : Bool = false,
-  mode? : SamplingMode = Bilinear,
-  padding? : PaddingMode = Zeros,
+  align_corners~ : Bool = false,
+  mode~ : SamplingMode = Bilinear,
+  padding~ : PaddingMode = Zeros,
 ) -> SampleGrad raise WarpError {
   let shape = check_sample(input, grid)
   if shape != grad_output.dims {
@@ -353,7 +353,7 @@ pub fn grid_sample_backward(
 /// Backpropagate an NHW2 grid gradient into row-major [N,2,3] affine coefficients.
 pub fn affine_grid_backward(
   grid_grad : Grid,
-  align_corners? : Bool = false,
+  align_corners~ : Bool = false,
 ) -> Array[Double] raise WarpError {
   let height = grid_grad.dims[1]
   let width = grid_grad.dims[2]
@@ -386,11 +386,11 @@ pub fn affine_grid_backward(
 pub fn warp_affine(
   input : Tensor,
   theta : Array[Double],
-  out_height : Int,
-  out_width : Int,
-  align_corners? : Bool = false,
-  mode? : SamplingMode = Bilinear,
-  padding? : PaddingMode = Zeros,
+  out_height : Int32,
+  out_width : Int32,
+  align_corners~ : Bool = false,
+  mode~ : SamplingMode = Bilinear,
+  padding~ : PaddingMode = Zeros,
 ) -> Tensor raise WarpError {
   let grid = affine_grid(
     theta,
@@ -408,9 +408,9 @@ pub fn warp_affine_backward(
   input : Tensor,
   theta : Array[Double],
   grad_output : Tensor,
-  align_corners? : Bool = false,
-  mode? : SamplingMode = Bilinear,
-  padding? : PaddingMode = Zeros,
+  align_corners~ : Bool = false,
+  mode~ : SamplingMode = Bilinear,
+  padding~ : PaddingMode = Zeros,
 ) -> WarpGrad raise WarpError {
   let grid = affine_grid(
     theta,

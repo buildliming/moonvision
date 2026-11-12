@@ -18,12 +18,13 @@ def main():
     parser.add_argument("--references", action="store_true", help="also check regenerated fixtures using pinned Python dependencies")
     parser.add_argument("--real-images", action="store_true", help="also compare offline real photos against NumPy/PyTorch")
     args = parser.parse_args()
-    run("moon", "check", "--target", "all", "--deny-warn")
+    run("moon", "version", "--all")
     for target in args.target or ["wasm-gc", "wasm", "js", "native"]:
+        run("moon", "check", "--target", target, "--deny-warn")
+        run("moon", "build", "--target", target, "--deny-warn")
         run("moon", "test", "--target", target, "--deny-warn")
-    run("moon", "run", "examples/main")
-    run("moon", "run", "examples/pipeline")
-    run("moon", "run", "examples/annotated")
+        for example in ["examples/main", "examples/pipeline", "examples/annotated"]:
+            run("moon", "run", example, "--target", target)
     run(sys.executable, "tools/build_web.py")
     run("node", "tools/test_bridge.mjs")
     run("node", "tools/test_cli.mjs")

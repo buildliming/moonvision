@@ -194,14 +194,14 @@ test "operation limits accept the boundary and reject excess in typed and JSON A
     ignore(replay_from_json(replay_to_json(oversized)))
   })
   let request = Json::object({
-    "action": "augment".to_json(),
+    "action": ToJson::to_json("augment"),
     "sample": sample_to_json(input),
     "pipeline": Json::array(
-      Array::make(257, Json::object({ "op": "hflip".to_json() })),
+      Array::make(257, Json::object({ "op": ToJson::to_json("hflip") })),
     ),
   })
   let response = @json.parse(process_json(request.stringify()))
-  assert_eq(field(response, "ok"), false.to_json())
+  assert_eq(field(response, "ok"), ToJson::to_json(false))
   assert_eq(
     string(field(response, "error")),
     "pipelines and replay records are limited to 256 operations",
@@ -223,7 +223,7 @@ test "box limit checks both decoded samples and JSON arrays" {
 test "JSON character limit rejects a real oversized string before parsing" {
   let oversized = " ".repeat(16777217)
   let result = @json.parse(process_json(oversized))
-  assert_eq(field(result, "ok"), false.to_json())
+  assert_eq(field(result, "ok"), ToJson::to_json(false))
   assert_eq(
     string(field(result, "error")),
     "JSON input is limited to 16777216 UTF-16 code units",
@@ -302,12 +302,12 @@ test "JSON bridge catches malformed input and replays complete annotated sample"
   let request =
     #|{"action":"augment","sample":{"image":{"width":2,"height":1,"channels":1,"data":[10,20]},"mask":[1,2],"boxes":[{"x_min":0,"y_min":0,"x_max":1,"y_max":1,"label":"cat"}]},"pipeline":[{"op":"hflip"}],"seed":42,"sample_id":"demo"}
   let response = @json.parse(process_json(request))
-  assert_eq(field(response, "ok"), true.to_json())
+  assert_eq(field(response, "ok"), ToJson::to_json(true))
   let sample = sample_from_json(field(response, "sample"))
   assert_eq(sample.mask, Some([2, 1]))
   assert_eq(sample.boxes[0].label, "cat")
   let replay_request = Json::object({
-    "action": "replay".to_json(),
+    "action": ToJson::to_json("replay"),
     "sample": field(@json.parse(request), "sample"),
     "replay": field(response, "replay"),
   })
@@ -325,7 +325,7 @@ test "JSON bridge catches malformed input and replays complete annotated sample"
       request.replace(old="[10,20]", new="[256,20]"),
     ] {
     let rejected = @json.parse(process_json(malformed))
-    assert_eq(field(rejected, "ok"), false.to_json())
+    assert_eq(field(rejected, "ok"), ToJson::to_json(false))
     assert_true(string(field(rejected, "error")).length() > 0)
   }
 }

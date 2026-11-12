@@ -8,7 +8,7 @@ pub(all) suberror InteropError {
 // Check the shared resource envelope before allocating or copying pixel values.
 
 ///|
-fn compatible_size(shape : Array[Int]) -> Int raise InteropError {
+fn compatible_size(shape : Array[Int32]) -> Int32 raise InteropError {
   guard shape.length() == 4 else {
     raise Invalid("expected NCHW rank 4 tensor")
   }
@@ -66,7 +66,7 @@ pub fn image_to_tensor(
 /// allocating the image buffer. Raises InteropError on failure.
 pub fn tensor_to_image(
   tensor : @moonwarp.Tensor,
-  batch_index? : Int = 0,
+  batch_index~ : Int32 = 0,
 ) -> @moonaug.Image raise InteropError {
   let shape = tensor.shape()
   ignore(compatible_size(shape))

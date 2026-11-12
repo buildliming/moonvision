@@ -4,11 +4,11 @@
 /// with antialiasing use pyramid_downsample instead.
 pub fn resize_tensor(
   input : Tensor,
-  out_height : Int,
-  out_width : Int,
-  align_corners? : Bool = false,
-  mode? : SamplingMode = Bilinear,
-  padding? : PaddingMode = Border,
+  out_height : Int32,
+  out_width : Int32,
+  align_corners~ : Bool = false,
+  mode~ : SamplingMode = Bilinear,
+  padding~ : PaddingMode = Border,
 ) -> Tensor raise WarpError {
   warp_affine(
     input,
@@ -81,7 +81,7 @@ fn binomial_blur5(input : Tensor) -> Tensor raise WarpError {
 /// Unit dimensions remain one. NCHW batch and channels are unchanged.
 pub fn pyramid_downsample(
   input : Tensor,
-  align_corners? : Bool = false,
+  align_corners~ : Bool = false,
 ) -> Tensor raise WarpError {
   let filtered = binomial_blur5(input)
   resize_tensor(
@@ -98,8 +98,8 @@ pub fn pyramid_downsample(
 /// four pixels. The first level is the original immutable tensor.
 pub fn build_image_pyramid(
   input : Tensor,
-  levels? : Int = 3,
-  align_corners? : Bool = false,
+  levels~ : Int32 = 3,
+  align_corners~ : Bool = false,
 ) -> Array[Tensor] raise WarpError {
   if levels < 1 || levels > 6 {
     raise Invalid("pyramid levels must be between 1 and 6")
@@ -128,12 +128,12 @@ pub fn build_image_pyramid(
 pub fn register_affine_multiscale(
   input : Tensor,
   target : Tensor,
-  levels? : Int = 3,
-  iterations_per_level? : Int = 80,
-  learning_rate? : Double = 0.5,
+  levels~ : Int32 = 3,
+  iterations_per_level~ : Int32 = 80,
+  learning_rate~ : Double = 0.5,
   initial_theta? : Array[Double],
-  align_corners? : Bool = false,
-  padding? : PaddingMode = Border,
+  align_corners~ : Bool = false,
+  padding~ : PaddingMode = Border,
 ) -> PyramidRegistration raise WarpError {
   if input.dims[0] != target.dims[0] || input.dims[1] != target.dims[1] {
     raise Invalid("registration requires equal batch and channel dimensions")

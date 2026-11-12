@@ -1,10 +1,10 @@
 ///|
 priv struct Rng {
-  mut state : UInt
+  mut state : UInt32
 }
 
 ///|
-fn Rng::next(self : Rng) -> UInt {
+fn Rng::next(self : Rng) -> UInt32 {
   let mut value = self.state
   value = value ^ (value << 13)
   value = value ^ (value >> 17)
@@ -14,7 +14,7 @@ fn Rng::next(self : Rng) -> UInt {
 }
 
 ///|
-fn Rng::new(seed : Int, sample_id : String) -> Rng {
+fn Rng::new(seed : Int32, sample_id : String) -> Rng {
   let mut state = seed.reinterpret_as_uint() ^ 2166136261U
   for unit in sample_id {
     state = (state ^ unit.to_uint()) * 16777619U
@@ -31,7 +31,7 @@ fn Rng::draw(self : Rng) -> Double {
 }
 
 ///|
-fn Rng::bounded(self : Rng, size : Int) -> Int {
+fn Rng::bounded(self : Rng, size : Int32) -> Int32 {
   (self.next() % size.reinterpret_as_uint()).reinterpret_as_int()
 }
 
@@ -46,9 +46,9 @@ fn Rng::bounded(self : Rng, size : Int) -> Int {
 pub fn augment(
   sample : Sample,
   pipeline : Array[Step],
-  seed : Int,
+  seed : Int32,
   sample_id : String,
-  min_visibility? : Double = 0.0,
+  min_visibility~ : Double = 0.0,
 ) -> Augmented raise AugError {
   validate(sample)
   let record = resolve_pipeline(

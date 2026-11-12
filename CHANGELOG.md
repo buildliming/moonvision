@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 — 2026-11-12
+
+- Migrate to the official stable toolchain `moonc v0.10.20+65efd5b93` and matching core, including derive attributes, explicit-width integer formatting and qualified JSON trait calls.
+- Record `moon version --all` in verification and run explicit builds plus all three public-API examples on each selected backend.
+- Check pinned and latest stable toolchains across all four backends in CI, with weekly compatibility runs.
+
 ## 0.2.3 — 2026-10-28
 
 - Exclude presentation screenshots from the Mooncakes archive; retain all offline photo fixtures, source, examples and numerical tests. README images continue to use pinned GitHub URLs.

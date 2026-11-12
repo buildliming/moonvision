@@ -14,12 +14,12 @@ fn snapshot_replay(record : Replay) -> Replay {
 
 ///|
 fn resolved_shape(
-  width : Int,
-  height : Int,
-  channels : Int,
+  width : Int32,
+  height : Int32,
+  channels : Int32,
   operation : Transform,
-  version : Int,
-) -> (Int, Int) raise AugError {
+  version : Int32,
+) -> (Int32, Int32) raise AugError {
   validate_transform(operation)
   match operation {
     Resize(w, h) => (w, h)
@@ -53,7 +53,7 @@ fn resolved_shape(
 // Validate every operation and every intermediate shape before executing any pixel work.
 
 ///|
-fn validate_record(record : Replay) -> (Int, Int) raise AugError {
+fn validate_record(record : Replay) -> (Int32, Int32) raise AugError {
   operation_count(record.operations.length())
   guard record.version == 1 || record.version == 2 else {
     raise Invalid("unsupported replay version")
@@ -85,10 +85,10 @@ fn validate_record(record : Replay) -> (Int, Int) raise AugError {
 fn append_resolved(
   operations : Array[Transform],
   operation : Transform,
-  width : Int,
-  height : Int,
-  channels : Int,
-) -> (Int, Int) raise AugError {
+  width : Int32,
+  height : Int32,
+  channels : Int32,
+) -> (Int32, Int32) raise AugError {
   operation_count(operations.length() + 1)
   let shape = resolved_shape(width, height, channels, operation, 2)
   operations.push(snapshot_transform(operation))
@@ -97,8 +97,8 @@ fn append_resolved(
 
 ///|
 fn letterbox_operations(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   options : LetterboxOptions,
 ) -> Array[Transform] {
   let mut scale = (options.width.to_double() / width.to_double()).min(
@@ -132,8 +132,8 @@ fn letterbox_operations(
 
 ///|
 fn resized_crop_operations(
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   options : ResizedCropOptions,
   rng : Rng,
 ) -> Array[Transform] {
@@ -189,7 +189,7 @@ fn resized_crop_operations(
 fn resolve_pipeline(
   image : Image,
   pipeline : Array[Step],
-  seed : Int,
+  seed : Int32,
   sample_id : String,
   min_visibility : Double,
 ) -> Replay raise AugError {

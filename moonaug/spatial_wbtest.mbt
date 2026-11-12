@@ -390,28 +390,28 @@ test "extended JSON schemas roundtrip keypoints batch records and retain legacy 
   let points = [{ x: 0.5, y: 0.5, label: "p", visible: true, }]
   let pipeline = Json::array([
     Json::object({
-      "op": "pad".to_json(),
-      "left": (1).to_json(),
-      "top": (0).to_json(),
-      "right": (0).to_json(),
-      "bottom": (0).to_json(),
-      "fill": [7].to_json(),
-      "mask_value": (255).to_json(),
+      "op": ToJson::to_json("pad"),
+      "left": ToJson::to_json(1),
+      "top": ToJson::to_json(0),
+      "right": ToJson::to_json(0),
+      "bottom": ToJson::to_json(0),
+      "fill": ToJson::to_json([7]),
+      "mask_value": ToJson::to_json(255),
     }),
   ])
   let request = Json::object({
-    "action": "augment".to_json(),
+    "action": ToJson::to_json("augment"),
     "sample": input,
     "pipeline": pipeline,
-    "keypoints": points.to_json(),
+    "keypoints": ToJson::to_json(points),
   })
   let response = @json.parse(process_json(request.stringify()))
-  assert_eq(field(response, "ok"), true.to_json())
+  assert_eq(field(response, "ok"), ToJson::to_json(true))
   assert_eq(keypoints_from_json(Some(field(response, "keypoints")))[0].x, 1.5)
   let replay_request = Json::object({
-    "action": "replay".to_json(),
+    "action": ToJson::to_json("replay"),
     "sample": input,
-    "keypoints": points.to_json(),
+    "keypoints": ToJson::to_json(points),
     "replay": field(response, "replay"),
   })
   assert_eq(
@@ -419,7 +419,7 @@ test "extended JSON schemas roundtrip keypoints batch records and retain legacy 
     field(response, "keypoints"),
   )
   let old = Json::object({
-    "action": "augment".to_json(),
+    "action": ToJson::to_json("augment"),
     "sample": input,
     "pipeline": Json::array([]),
   })
@@ -428,19 +428,19 @@ test "extended JSON schemas roundtrip keypoints batch records and retain legacy 
     None,
   )
   let batch = Json::object({
-    "action": "augment_batch".to_json(),
+    "action": ToJson::to_json("augment_batch"),
     "items": Json::array([
       Json::object({
-        "sample_id": "one".to_json(),
+        "sample_id": ToJson::to_json("one"),
         "sample": input,
-        "keypoints": points.to_json(),
+        "keypoints": ToJson::to_json(points),
       }),
-      Json::object({ "sample_id": "two".to_json(), "sample": input }),
+      Json::object({ "sample_id": ToJson::to_json("two"), "sample": input }),
     ]),
     "pipeline": pipeline,
   })
   let response = @json.parse(process_json(batch.stringify()))
-  assert_eq(field(response, "ok"), true.to_json())
+  assert_eq(field(response, "ok"), ToJson::to_json(true))
   let records = []
   for item in array(field(response, "items")) {
     records.push(
@@ -451,7 +451,7 @@ test "extended JSON schemas roundtrip keypoints batch records and retain legacy 
     )
   }
   let batch_replay = Json::object({
-    "action": "replay_batch".to_json(),
+    "action": ToJson::to_json("replay_batch"),
     "items": field(batch, "items"),
     "records": Json::array(records),
   })
@@ -465,45 +465,45 @@ test "extended JSON schemas roundtrip keypoints batch records and retain legacy 
 test "JSON budgets reject decoded or enlarged images before output execution" {
   let input = sample_to_json(fixture())
   let request = Json::object({
-    "action": "augment".to_json(),
+    "action": ToJson::to_json("augment"),
     "sample": input,
     "pipeline": Json::array([
       Json::object({
-        "op": "resize".to_json(),
-        "width": (4096).to_json(),
-        "height": (4096).to_json(),
+        "op": ToJson::to_json("resize"),
+        "width": ToJson::to_json(4096),
+        "height": ToJson::to_json(4096),
       }),
     ]),
   })
   assert_eq(
     field(@json.parse(process_json(request.stringify())), "ok"),
-    false.to_json(),
+    ToJson::to_json(false),
   )
   let over = Json::object({
     "image": Json::object({
-      "width": (1025).to_json(),
-      "height": (1024).to_json(),
-      "channels": (1).to_json(),
+      "width": ToJson::to_json(1025),
+      "height": ToJson::to_json(1024),
+      "channels": ToJson::to_json(1),
       "data": Json::array([]),
     }),
   })
   expect_invalid(() => ignore(sample_from_json(over)))
   let batch = Json::object({
-    "action": "augment_batch".to_json(),
+    "action": ToJson::to_json("augment_batch"),
     "items": Json::array([
-      Json::object({ "sample_id": "a".to_json(), "sample": input }),
-      Json::object({ "sample_id": "b".to_json(), "sample": input }),
+      Json::object({ "sample_id": ToJson::to_json("a"), "sample": input }),
+      Json::object({ "sample_id": ToJson::to_json("b"), "sample": input }),
     ]),
     "pipeline": Json::array([
       Json::object({
-        "op": "resize".to_json(),
-        "width": (1024).to_json(),
-        "height": (1024).to_json(),
+        "op": ToJson::to_json("resize"),
+        "width": ToJson::to_json(1024),
+        "height": ToJson::to_json(1024),
       }),
     ]),
   })
   assert_eq(
     field(@json.parse(process_json(batch.stringify())), "ok"),
-    false.to_json(),
+    ToJson::to_json(false),
   )
 }

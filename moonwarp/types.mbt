@@ -8,7 +8,7 @@ pub(all) suberror WarpError {
 /// A validated dense image batch in NCHW order, with Double samples.
 /// Construct with `Tensor::new`; accessors return copies.
 struct Tensor {
-  dims : Array[Int]
+  dims : Array[Int32]
   values : Array[Double]
 }
 
@@ -16,7 +16,7 @@ struct Tensor {
 /// Normalized sampling coordinates in NHW2 order, with x before y.
 /// Coordinates outside [-1,1] are allowed; sampling chooses their padding rule.
 struct Grid {
-  dims : Array[Int]
+  dims : Array[Int32]
   values : Array[Double]
 }
 
@@ -61,8 +61,8 @@ pub(all) enum PaddingMode {
 /// One coarse-to-fine optimization stage. Losses are comparable within this
 /// stage only; height and width describe its target tensor.
 pub(all) struct RegistrationLevel {
-  height : Int
-  width : Int
+  height : Int32
+  width : Int32
   theta : Array[Double]
   losses : Array[Double]
 }
@@ -86,7 +86,7 @@ fn finite(value : Double) -> Bool {
 
 ///|
 /// Check shape arithmetic before allocation. At most 1,048,576 values per object.
-fn checked_size(shape : Array[Int], rank : Int) -> Int raise WarpError {
+fn checked_size(shape : Array[Int32], rank : Int32) -> Int32 raise WarpError {
   if shape.length() != rank {
     raise Invalid("expected rank \{rank}, got \{shape.length()}")
   }
@@ -115,7 +115,7 @@ fn validate_values(values : Array[Double]) -> Unit raise WarpError {
 ///|
 /// Create a NCHW image tensor. Dimensions are positive and total size is bounded.
 pub fn Tensor::new(
-  shape : Array[Int],
+  shape : Array[Int32],
   data : Array[Double],
 ) -> Tensor raise WarpError {
   let size = checked_size(shape, 4)
@@ -128,7 +128,7 @@ pub fn Tensor::new(
 
 ///|
 /// Return an independent copy of NCHW dimensions.
-pub fn Tensor::shape(self : Tensor) -> Array[Int] {
+pub fn Tensor::shape(self : Tensor) -> Array[Int32] {
   self.dims.copy()
 }
 
@@ -141,7 +141,7 @@ pub fn Tensor::data(self : Tensor) -> Array[Double] {
 ///|
 /// Create an NHW2 sampling grid, where each point contains normalized x then y.
 pub fn Grid::new(
-  shape : Array[Int],
+  shape : Array[Int32],
   data : Array[Double],
 ) -> Grid raise WarpError {
   let size = checked_size(shape, 4)
@@ -157,7 +157,7 @@ pub fn Grid::new(
 
 ///|
 /// Return an independent copy of NHW2 dimensions.
-pub fn Grid::shape(self : Grid) -> Array[Int] {
+pub fn Grid::shape(self : Grid) -> Array[Int32] {
   self.dims.copy()
 }
 
@@ -169,7 +169,7 @@ pub fn Grid::data(self : Grid) -> Array[Double] {
 
 ///|
 /// Return a separate identity 2x3 transform for each batch item.
-pub fn identity_theta(batch : Int) -> Array[Double] raise WarpError {
+pub fn identity_theta(batch : Int32) -> Array[Double] raise WarpError {
   if batch <= 0 || batch > 4096 {
     raise Invalid("batch must be between 1 and 4096")
   }
@@ -182,7 +182,7 @@ pub fn identity_theta(batch : Int) -> Array[Double] raise WarpError {
 }
 
 ///|
-fn validate_theta(theta : Array[Double], batch : Int) -> Unit raise WarpError {
+fn validate_theta(theta : Array[Double], batch : Int32) -> Unit raise WarpError {
   if batch <= 0 || batch > 4096 || theta.length() != batch * 6 {
     raise Invalid(
       "theta must contain six row-major coefficients per batch item",
@@ -192,7 +192,11 @@ fn validate_theta(theta : Array[Double], batch : Int) -> Unit raise WarpError {
 }
 
 ///|
-fn pixel_coordinate(value : Double, size : Int, align_corners : Bool) -> Double {
+fn pixel_coordinate(
+  value : Double,
+  size : Int32,
+  align_corners : Bool,
+) -> Double {
   if align_corners {
     (value + 1.0) * (size - 1).to_double() / 2.0
   } else {
@@ -201,7 +205,7 @@ fn pixel_coordinate(value : Double, size : Int, align_corners : Bool) -> Double 
 }
 
 ///|
-fn coordinate_scale(size : Int, align_corners : Bool) -> Double {
+fn coordinate_scale(size : Int32, align_corners : Bool) -> Double {
   if align_corners {
     (size - 1).to_double() / 2.0
   } else {
@@ -211,8 +215,8 @@ fn coordinate_scale(size : Int, align_corners : Bool) -> Double {
 
 ///|
 fn normalized_coordinate(
-  index : Int,
-  size : Int,
+  index : Int32,
+  size : Int32,
   align_corners : Bool,
 ) -> Double {
   if align_corners {
@@ -227,7 +231,13 @@ fn normalized_coordinate(
 }
 
 ///|
-fn read_zero(input : Tensor, n : Int, c : Int, y : Int, x : Int) -> Double {
+fn read_zero(
+  input : Tensor,
+  n : Int32,
+  c : Int32,
+  y : Int32,
+  x : Int32,
+) -> Double {
   let height = input.dims[2]
   let width = input.dims[3]
   if y < 0 || y >= height || x < 0 || x >= width {

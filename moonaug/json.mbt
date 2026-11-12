@@ -22,7 +22,7 @@ fn number(value : Json) -> Double raise AugError {
 }
 
 ///|
-fn integer(value : Json) -> Int raise AugError {
+fn integer(value : Json) -> Int32 raise AugError {
   let n = number(value)
   guard n >= -2147483648.0 && n <= 2147483647.0 && @math.floor(n) == n else {
     raise Invalid("expected 32-bit JSON integer")
@@ -120,16 +120,18 @@ pub fn sample_from_json(value : Json) -> Sample raise AugError {
 pub fn sample_to_json(sample : Sample) -> Json {
   Json::object({
     "image": Json::object({
-      "width": sample.image.width.to_json(),
-      "height": sample.image.height.to_json(),
-      "channels": sample.image.channels.to_json(),
-      "data": sample.image.data.map(fn(value) { value.to_int() }).to_json(),
+      "width": ToJson::to_json(sample.image.width),
+      "height": ToJson::to_json(sample.image.height),
+      "channels": ToJson::to_json(sample.image.channels),
+      "data": ToJson::to_json(
+        sample.image.data.map(fn(value) { value.to_int() }),
+      ),
     }),
     "mask": match sample.mask {
-      Some(mask) => mask.to_json()
+      Some(mask) => ToJson::to_json(mask)
       None => Json::null()
     },
-    "boxes": sample.boxes.to_json(),
+    "boxes": ToJson::to_json(sample.boxes),
   })
 }
 
@@ -196,60 +198,69 @@ fn transform_to_json(transform : Transform) -> Json {
   match transform {
     Resize(w, h) =>
       Json::object({
-        "op": "resize".to_json(),
-        "width": w.to_json(),
-        "height": h.to_json(),
+        "op": ToJson::to_json("resize"),
+        "width": ToJson::to_json(w),
+        "height": ToJson::to_json(h),
       })
     Crop(x, y, w, h) =>
       Json::object({
-        "op": "crop".to_json(),
-        "x": x.to_json(),
-        "y": y.to_json(),
-        "width": w.to_json(),
-        "height": h.to_json(),
+        "op": ToJson::to_json("crop"),
+        "x": ToJson::to_json(x),
+        "y": ToJson::to_json(y),
+        "width": ToJson::to_json(w),
+        "height": ToJson::to_json(h),
       })
     RandomCrop(w, h) =>
       Json::object({
-        "op": "random_crop".to_json(),
-        "width": w.to_json(),
-        "height": h.to_json(),
+        "op": ToJson::to_json("random_crop"),
+        "width": ToJson::to_json(w),
+        "height": ToJson::to_json(h),
       })
-    HFlip => Json::object({ "op": "hflip".to_json() })
-    VFlip => Json::object({ "op": "vflip".to_json() })
+    HFlip => Json::object({ "op": ToJson::to_json("hflip") })
+    VFlip => Json::object({ "op": ToJson::to_json("vflip") })
     Rotate90(turns) =>
-      Json::object({ "op": "rotate90".to_json(), "turns": turns.to_json() })
+      Json::object({
+        "op": ToJson::to_json("rotate90"),
+        "turns": ToJson::to_json(turns),
+      })
     Brightness(factor) =>
-      Json::object({ "op": "brightness".to_json(), "factor": factor.to_json() })
+      Json::object({
+        "op": ToJson::to_json("brightness"),
+        "factor": ToJson::to_json(factor),
+      })
     Contrast(factor) =>
-      Json::object({ "op": "contrast".to_json(), "factor": factor.to_json() })
+      Json::object({
+        "op": ToJson::to_json("contrast"),
+        "factor": ToJson::to_json(factor),
+      })
     Pad(padding) =>
       Json::object({
-        "op": "pad".to_json(),
-        "left": padding.left.to_json(),
-        "top": padding.top.to_json(),
-        "right": padding.right.to_json(),
-        "bottom": padding.bottom.to_json(),
-        "fill": padding.fill.map(fn(value) { value.to_int() }).to_json(),
-        "mask_value": padding.mask_value.to_json(),
+        "op": ToJson::to_json("pad"),
+        "left": ToJson::to_json(padding.left),
+        "top": ToJson::to_json(padding.top),
+        "right": ToJson::to_json(padding.right),
+        "bottom": ToJson::to_json(padding.bottom),
+        "fill": ToJson::to_json(padding.fill.map(fn(value) { value.to_int() })),
+        "mask_value": ToJson::to_json(padding.mask_value),
       })
     Letterbox(options) =>
       Json::object({
-        "op": "letterbox".to_json(),
-        "width": options.width.to_json(),
-        "height": options.height.to_json(),
-        "fill": options.fill.map(fn(value) { value.to_int() }).to_json(),
-        "mask_value": options.mask_value.to_json(),
-        "scale_up": options.scale_up.to_json(),
+        "op": ToJson::to_json("letterbox"),
+        "width": ToJson::to_json(options.width),
+        "height": ToJson::to_json(options.height),
+        "fill": ToJson::to_json(options.fill.map(fn(value) { value.to_int() })),
+        "mask_value": ToJson::to_json(options.mask_value),
+        "scale_up": ToJson::to_json(options.scale_up),
       })
     RandomResizedCrop(options) =>
       Json::object({
-        "op": "random_resized_crop".to_json(),
-        "width": options.width.to_json(),
-        "height": options.height.to_json(),
-        "scale_min": options.scale_min.to_json(),
-        "scale_max": options.scale_max.to_json(),
-        "ratio_min": options.ratio_min.to_json(),
-        "ratio_max": options.ratio_max.to_json(),
+        "op": ToJson::to_json("random_resized_crop"),
+        "width": ToJson::to_json(options.width),
+        "height": ToJson::to_json(options.height),
+        "scale_min": ToJson::to_json(options.scale_min),
+        "scale_max": ToJson::to_json(options.scale_max),
+        "ratio_min": ToJson::to_json(options.ratio_min),
+        "ratio_max": ToJson::to_json(options.ratio_max),
       })
   }
 }
@@ -258,11 +269,11 @@ fn transform_to_json(transform : Transform) -> Json {
 /// Serialize a valid resolved replay. Version 2 extends version 1 with Pad.
 pub fn replay_to_json(record : Replay) -> Json {
   Json::object({
-    "version": record.version.to_json(),
-    "input_width": record.input_width.to_json(),
-    "input_height": record.input_height.to_json(),
-    "input_channels": record.input_channels.to_json(),
-    "min_visibility": record.min_visibility.to_json(),
+    "version": ToJson::to_json(record.version),
+    "input_width": ToJson::to_json(record.input_width),
+    "input_height": ToJson::to_json(record.input_height),
+    "input_channels": ToJson::to_json(record.input_channels),
+    "min_visibility": ToJson::to_json(record.min_visibility),
     "operations": Json::array(record.operations.map(transform_to_json)),
   })
 }
@@ -312,8 +323,10 @@ pub fn replay_from_json(value : Json) -> Replay raise AugError {
 pub fn process_json(input : String) -> String {
   if input.length() > MAX_JSON_CHARS {
     return Json::object({
-      "ok": false.to_json(),
-      "error": "JSON input is limited to 16777216 UTF-16 code units".to_json(),
+      "ok": ToJson::to_json(false),
+      "error": ToJson::to_json(
+        "JSON input is limited to 16777216 UTF-16 code units",
+      ),
     }).stringify()
   }
   let result = try {
@@ -321,11 +334,14 @@ pub fn process_json(input : String) -> String {
     process_request(request)
   } catch {
     Invalid(message) =>
-      Json::object({ "ok": false.to_json(), "error": message.to_json() })
+      Json::object({
+        "ok": ToJson::to_json(false),
+        "error": ToJson::to_json(message),
+      })
     _ =>
       Json::object({
-        "ok": false.to_json(),
-        "error": "invalid JSON input".to_json(),
+        "ok": ToJson::to_json(false),
+        "error": ToJson::to_json("invalid JSON input"),
       })
   }
   result.stringify()

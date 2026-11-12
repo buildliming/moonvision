@@ -19,7 +19,7 @@ fn optional(value : Json, key : String) -> Json? {
 }
 
 ///|
-fn decode_int(value : Json) -> Int raise WarpError {
+fn decode_int(value : Json) -> Int32 raise WarpError {
   guard value is Number(number, ..) else {
     raise Invalid("expected an integer")
   }
@@ -33,7 +33,7 @@ fn decode_int(value : Json) -> Int raise WarpError {
 }
 
 ///|
-fn decode_shape(value : Json) -> Array[Int] raise WarpError {
+fn decode_shape(value : Json) -> Array[Int32] raise WarpError {
   guard value is Array(items) else {
     raise Invalid("shape must be an integer array")
   }
@@ -86,7 +86,7 @@ fn decode_tensor(value : Json) -> Tensor raise WarpError {
 }
 
 ///|
-fn json_budget(size : Int) -> Unit raise WarpError {
+fn json_budget(size : Int32) -> Unit raise WarpError {
   if size > 262144 {
     raise Invalid("JSON tensors and grids are limited to 262144 values each")
   }
@@ -95,7 +95,7 @@ fn json_budget(size : Int) -> Unit raise WarpError {
 ///|
 fn preflight_array(
   value : Json,
-  expected : Int,
+  expected : Int32,
   name : String,
 ) -> Unit raise WarpError {
   guard value is Array(items) else { raise Invalid("\{name} must be an array") }
@@ -118,7 +118,7 @@ fn decode_grid(value : Json) -> Grid raise WarpError {
 }
 
 ///|
-fn decode_theta(value : Json, batch : Int) -> Array[Double] raise WarpError {
+fn decode_theta(value : Json, batch : Int32) -> Array[Double] raise WarpError {
   preflight_array(value, batch * 6, "theta")
   decode_numbers(value)
 }
@@ -141,14 +141,17 @@ pub fn tensor_to_json(tensor : Tensor) -> Json {
 ///|
 fn encode_tensor(tensor : Tensor) -> Json {
   Json::object({
-    "shape": tensor.dims.to_json(),
-    "data": tensor.values.to_json(),
+    "shape": ToJson::to_json(tensor.dims),
+    "data": ToJson::to_json(tensor.values),
   })
 }
 
 ///|
 fn encode_grid(grid : Grid) -> Json {
-  Json::object({ "shape": grid.dims.to_json(), "data": grid.values.to_json() })
+  Json::object({
+    "shape": ToJson::to_json(grid.dims),
+    "data": ToJson::to_json(grid.values),
+  })
 }
 
 ///|
@@ -186,8 +189,8 @@ fn request_padding(
 ///|
 fn json_output_shape(
   input : Tensor,
-  height : Int,
-  width : Int,
+  height : Int32,
+  width : Int32,
 ) -> Unit raise WarpError {
   json_budget(checked_size([input.dims[0], input.dims[1], height, width], 4))
   json_budget(checked_size([input.dims[0], height, width, 2], 4))
@@ -250,10 +253,10 @@ fn process_request(request : Json) -> Json raise WarpError {
     Json::object({
       "ok": Json::boolean(true),
       "output": encode_tensor(result.output),
-      "theta": result.theta.to_json(),
-      "losses": result.losses.to_json(),
-      "initial_loss": result.losses[0].to_json(),
-      "final_loss": result.losses[result.losses.length() - 1].to_json(),
+      "theta": ToJson::to_json(result.theta),
+      "losses": ToJson::to_json(result.losses),
+      "initial_loss": ToJson::to_json(result.losses[0]),
+      "final_loss": ToJson::to_json(result.losses[result.losses.length() - 1]),
     })
   } else if action == "register_multiscale" {
     let padding = request_padding(request, Border)
@@ -286,19 +289,19 @@ fn process_request(request : Json) -> Json raise WarpError {
     )
     let traces = result.levels.map(level => {
       Json::object({
-        "height": level.height.to_json(),
-        "width": level.width.to_json(),
-        "theta": level.theta.to_json(),
-        "losses": level.losses.to_json(),
+        "height": ToJson::to_json(level.height),
+        "width": ToJson::to_json(level.width),
+        "theta": ToJson::to_json(level.theta),
+        "losses": ToJson::to_json(level.losses),
       })
     })
     Json::object({
       "ok": Json::boolean(true),
       "output": encode_tensor(result.output),
-      "theta": result.theta.to_json(),
+      "theta": ToJson::to_json(result.theta),
       "levels": Json::array(traces),
-      "initial_loss": result.initial_loss.to_json(),
-      "final_loss": result.final_loss.to_json(),
+      "initial_loss": ToJson::to_json(result.initial_loss),
+      "final_loss": ToJson::to_json(result.final_loss),
     })
   } else if action == "backward" {
     let mode = request_mode(request)
@@ -336,7 +339,7 @@ fn process_request(request : Json) -> Json raise WarpError {
         Json::object({
           "ok": Json::boolean(true),
           "input_grad": encode_tensor(gradient.input_grad),
-          "theta_grad": gradient.theta_grad.to_json(),
+          "theta_grad": ToJson::to_json(gradient.theta_grad),
         })
       }
     }

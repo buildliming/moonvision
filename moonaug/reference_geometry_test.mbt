@@ -5,7 +5,7 @@
 fn reference_sample(
   got : @moonaug.Sample,
   expected : @moonaug.Sample,
-  pixel_tolerance : Int,
+  pixel_tolerance : Int32,
 ) -> Unit raise {
   assert_eq(got.image.width, expected.image.width)
   assert_eq(got.image.height, expected.image.height)

@@ -1,50 +1,54 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "shunge/moonvision/moonwarp"
 
+import {
+  "moonbitlang/core/json",
+}
+
 // Values
-pub fn affine_grid(Array[Double], Int, Int, Int, align_corners? : Bool) -> Grid raise WarpError
+pub fn affine_grid(Array[Double], Int32, Int32, Int32, align_corners? : Bool) -> Grid raise WarpError
 
 pub fn affine_grid_backward(Grid, align_corners? : Bool) -> Array[Double] raise WarpError
 
-pub fn build_image_pyramid(Tensor, levels? : Int, align_corners? : Bool) -> Array[Tensor] raise WarpError
+pub fn build_image_pyramid(Tensor, levels? : Int32, align_corners? : Bool) -> Array[Tensor] raise WarpError
 
 pub fn compose_theta(Array[Double], Array[Double]) -> Array[Double] raise WarpError
 
-pub fn denormalize_point(Double, Double, Int, Int, align_corners? : Bool) -> (Double, Double) raise WarpError
+pub fn denormalize_point(Double, Double, Int32, Int32, align_corners? : Bool) -> (Double, Double) raise WarpError
 
 pub fn grid_sample(Tensor, Grid, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
 
 pub fn grid_sample_backward(Tensor, Grid, Tensor, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> SampleGrad raise WarpError
 
-pub fn identity_theta(Int) -> Array[Double] raise WarpError
+pub fn identity_theta(Int32) -> Array[Double] raise WarpError
 
 pub fn invert_theta(Array[Double], epsilon? : Double) -> Array[Double] raise WarpError
 
 pub fn mse_loss(Tensor, Tensor) -> Double raise WarpError
 
-pub fn normalize_pixel_point(Double, Double, Int, Int, align_corners? : Bool) -> (Double, Double) raise WarpError
+pub fn normalize_pixel_point(Double, Double, Int32, Int32, align_corners? : Bool) -> (Double, Double) raise WarpError
 
-pub fn pixel_affine_to_theta(Array[Double], Int, Int, Int, Int, align_corners? : Bool) -> Array[Double] raise WarpError
+pub fn pixel_affine_to_theta(Array[Double], Int32, Int32, Int32, Int32, align_corners? : Bool) -> Array[Double] raise WarpError
 
 pub fn process_json(String) -> String
 
 pub fn pyramid_downsample(Tensor, align_corners? : Bool) -> Tensor raise WarpError
 
-pub fn register_affine(Tensor, Tensor, iterations? : Int, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool, padding? : PaddingMode) -> Registration raise WarpError
+pub fn register_affine(Tensor, Tensor, iterations? : Int32, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool, padding? : PaddingMode) -> Registration raise WarpError
 
-pub fn register_affine_multiscale(Tensor, Tensor, levels? : Int, iterations_per_level? : Int, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool, padding? : PaddingMode) -> PyramidRegistration raise WarpError
+pub fn register_affine_multiscale(Tensor, Tensor, levels? : Int32, iterations_per_level? : Int32, learning_rate? : Double, initial_theta? : Array[Double], align_corners? : Bool, padding? : PaddingMode) -> PyramidRegistration raise WarpError
 
-pub fn resize_tensor(Tensor, Int, Int, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
+pub fn resize_tensor(Tensor, Int32, Int32, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
 
-pub fn tensor_from_json(Json) -> Tensor raise WarpError
+pub fn tensor_from_json(@json.Json) -> Tensor raise WarpError
 
-pub fn tensor_to_json(Tensor) -> Json
+pub fn tensor_to_json(Tensor) -> @json.Json
 
-pub fn theta_to_pixel_affine(Array[Double], Int, Int, Int, Int, align_corners? : Bool) -> Array[Double] raise WarpError
+pub fn theta_to_pixel_affine(Array[Double], Int32, Int32, Int32, Int32, align_corners? : Bool) -> Array[Double] raise WarpError
 
-pub fn transform_points(Array[Double], Array[(Double, Double)], batch_index? : Int) -> Array[(Double, Double)] raise WarpError
+pub fn transform_points(Array[Double], Array[(Double, Double)], batch_index? : Int32) -> Array[(Double, Double)] raise WarpError
 
-pub fn warp_affine(Tensor, Array[Double], Int, Int, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
+pub fn warp_affine(Tensor, Array[Double], Int32, Int32, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> Tensor raise WarpError
 
 pub fn warp_affine_backward(Tensor, Array[Double], Tensor, align_corners? : Bool, mode? : SamplingMode, padding? : PaddingMode) -> WarpGrad raise WarpError
 
@@ -56,8 +60,8 @@ pub(all) suberror WarpError {
 // Types and methods
 type Grid
 pub fn Grid::data(Self) -> Array[Double]
-pub fn Grid::new(Array[Int], Array[Double]) -> Self raise WarpError
-pub fn Grid::shape(Self) -> Array[Int]
+pub fn Grid::new(Array[Int32], Array[Double]) -> Self raise WarpError
+pub fn Grid::shape(Self) -> Array[Int32]
 
 pub(all) enum PaddingMode {
   Zeros
@@ -80,8 +84,8 @@ pub(all) struct Registration {
 }
 
 pub(all) struct RegistrationLevel {
-  height : Int
-  width : Int
+  height : Int32
+  width : Int32
   theta : Array[Double]
   losses : Array[Double]
 }
@@ -98,8 +102,8 @@ pub(all) enum SamplingMode {
 
 type Tensor
 pub fn Tensor::data(Self) -> Array[Double]
-pub fn Tensor::new(Array[Int], Array[Double]) -> Self raise WarpError
-pub fn Tensor::shape(Self) -> Array[Int]
+pub fn Tensor::new(Array[Int32], Array[Double]) -> Self raise WarpError
+pub fn Tensor::shape(Self) -> Array[Int32]
 
 pub(all) struct WarpGrad {
   input_grad : Tensor

@@ -56,11 +56,11 @@ fn mse_gradient(output : Tensor, target : Tensor) -> Tensor {
 pub fn register_affine(
   input : Tensor,
   target : Tensor,
-  iterations? : Int = 120,
-  learning_rate? : Double = 0.5,
+  iterations~ : Int32 = 120,
+  learning_rate~ : Double = 0.5,
   initial_theta? : Array[Double],
-  align_corners? : Bool = false,
-  padding? : PaddingMode = Zeros,
+  align_corners~ : Bool = false,
+  padding~ : PaddingMode = Zeros,
 ) -> Registration raise WarpError {
   if input.dims[0] != target.dims[0] || input.dims[1] != target.dims[1] {
     raise Invalid("registration requires equal batch and channel dimensions")

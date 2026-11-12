@@ -114,9 +114,9 @@ fn execute_extended(
 pub fn augment_with_keypoints(
   input : ExtendedSample,
   pipeline : Array[Step],
-  seed : Int,
+  seed : Int32,
   sample_id : String,
-  min_visibility? : Double = 0.0,
+  min_visibility~ : Double = 0.0,
 ) -> ExtendedAugmented raise AugError {
   validate_extended(input)
   let record = resolve_pipeline(

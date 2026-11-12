@@ -78,7 +78,7 @@ pub fn tensor_to_images(
 
 ///|
 fn channel_parameters(
-  channels : Int,
+  channels : Int32,
   mean : Array[Double],
   std : Array[Double],
 ) -> Unit raise InteropError {
@@ -173,9 +173,9 @@ pub fn denormalize(
 /// Convert an integer HW category mask to a batch-one, one-channel NCHW tensor.
 /// Category IDs stay exact; they are never divided by 255. Use nearest sampling.
 pub fn mask_to_tensor(
-  mask : Array[Int],
-  width : Int,
-  height : Int,
+  mask : Array[Int32],
+  width : Int32,
+  height : Int32,
 ) -> @moonwarp.Tensor raise InteropError {
   let shape = [1, 1, height, width]
   let size = compatible_size(shape)
@@ -198,8 +198,8 @@ pub fn mask_to_tensor(
 /// This rejects bilinearly mixed labels and nonintegral or out-of-int32 values.
 pub fn tensor_to_mask(
   tensor : @moonwarp.Tensor,
-  batch_index? : Int = 0,
-) -> Array[Int] raise InteropError {
+  batch_index~ : Int32 = 0,
+) -> Array[Int32] raise InteropError {
   let shape = tensor.shape()
   ignore(compatible_size(shape))
   guard shape[1] == 1 else {

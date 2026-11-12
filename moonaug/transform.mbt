@@ -6,8 +6,8 @@ fn byte_value(value : Double) -> Byte {
 ///|
 fn clip_box(
   box : BBox,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   min_visibility : Double,
 ) -> BBox? {
   let x_min = box.x_min.max(0.0).min(width.to_double())
@@ -38,9 +38,9 @@ fn keep_valid_boxes(boxes : Array[BBox]) -> Array[BBox] {
 ///|
 fn remap(
   sample : Sample,
-  width : Int,
-  height : Int,
-  source : (Int, Int) -> (Int, Int),
+  width : Int32,
+  height : Int32,
+  source : (Int32, Int32) -> (Int32, Int32),
   boxes : Array[BBox],
 ) -> Sample {
   let channels = sample.image.channels
@@ -64,10 +64,10 @@ fn remap(
 
 ///|
 fn nearest_source_index(
-  index : Int,
-  input_size : Int,
-  output_size : Int,
-) -> Int {
+  index : Int32,
+  input_size : Int32,
+  output_size : Int32,
+) -> Int32 {
   // Keep exact center ties on their upper class. The pixel budget bounds
   // the numerator below 2^49, so multiplication is exact in Double; dividing
   // a precomputed size ratio instead can round an integer center downward.
@@ -79,7 +79,7 @@ fn nearest_source_index(
 }
 
 ///|
-fn resize_sample(sample : Sample, width : Int, height : Int) -> Sample {
+fn resize_sample(sample : Sample, width : Int32, height : Int32) -> Sample {
   let image = sample.image
   let channels = image.channels
   let data = Array::make(width * height * channels, b'\x00')

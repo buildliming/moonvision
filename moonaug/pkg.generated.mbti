@@ -3,14 +3,15 @@ package "shunge/moonvision/moonaug"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
-pub fn augment(Sample, Array[Step], Int, String, min_visibility? : Double) -> Augmented raise AugError
+pub fn augment(Sample, Array[Step], Int32, String, min_visibility? : Double) -> Augmented raise AugError
 
-pub fn augment_batch(Array[BatchItem], Array[Step], Int, min_visibility? : Double) -> Array[BatchResult] raise AugError
+pub fn augment_batch(Array[BatchItem], Array[Step], Int32, min_visibility? : Double) -> Array[BatchResult] raise AugError
 
-pub fn augment_with_keypoints(ExtendedSample, Array[Step], Int, String, min_visibility? : Double) -> ExtendedAugmented raise AugError
+pub fn augment_with_keypoints(ExtendedSample, Array[Step], Int32, String, min_visibility? : Double) -> ExtendedAugmented raise AugError
 
 pub fn process_json(String) -> String
 
@@ -18,187 +19,204 @@ pub fn replay(Sample, Replay) -> Sample raise AugError
 
 pub fn replay_batch(Array[BatchItem], Array[BatchReplay]) -> Array[BatchResult] raise AugError
 
-pub fn replay_from_json(Json) -> Replay raise AugError
+pub fn replay_from_json(@json.Json) -> Replay raise AugError
 
-pub fn replay_to_json(Replay) -> Json
+pub fn replay_to_json(Replay) -> @json.Json
 
 pub fn replay_with_keypoints(ExtendedSample, Replay) -> ExtendedSample raise AugError
 
-pub fn sample_from_json(Json) -> Sample raise AugError
+pub fn sample_from_json(@json.Json) -> Sample raise AugError
 
-pub fn sample_to_json(Sample) -> Json
+pub fn sample_to_json(Sample) -> @json.Json
 
 pub fn validate(Sample) -> Unit raise AugError
 
 pub fn validate_extended(ExtendedSample) -> Unit raise AugError
 
 // Errors
+#derive(Eq, @debug.Debug)
 pub(all) suberror AugError {
   Invalid(String)
-} derive(Eq, @debug.Debug)
+}
 pub fn AugError::equal(Self, Self) -> Bool
 pub fn AugError::not_equal(Self, Self) -> Bool
 pub fn AugError::to_repr(Self) -> @debug.Repr
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Augmented {
   sample : Sample
   replay : Replay
-} derive(Eq, @debug.Debug)
+}
 pub fn Augmented::equal(Self, Self) -> Bool
 pub fn Augmented::not_equal(Self, Self) -> Bool
 pub fn Augmented::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug, @json.ToJson)
 pub(all) struct BBox {
   x_min : Double
   y_min : Double
   x_max : Double
   y_max : Double
   label : String
-} derive(Eq, ToJson, @debug.Debug)
+}
 pub fn BBox::equal(Self, Self) -> Bool
 pub fn BBox::not_equal(Self, Self) -> Bool
-pub fn BBox::to_json(Self) -> Json
+pub fn BBox::to_json(Self) -> @json.Json
 pub fn BBox::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct BatchItem {
   sample_id : String
   input : ExtendedSample
-} derive(Eq, @debug.Debug)
+}
 pub fn BatchItem::equal(Self, Self) -> Bool
 pub fn BatchItem::not_equal(Self, Self) -> Bool
 pub fn BatchItem::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct BatchReplay {
   sample_id : String
   replay : Replay
-} derive(Eq, @debug.Debug)
+}
 pub fn BatchReplay::equal(Self, Self) -> Bool
 pub fn BatchReplay::not_equal(Self, Self) -> Bool
 pub fn BatchReplay::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct BatchResult {
   sample_id : String
   output : ExtendedAugmented
-} derive(Eq, @debug.Debug)
+}
 pub fn BatchResult::equal(Self, Self) -> Bool
 pub fn BatchResult::not_equal(Self, Self) -> Bool
 pub fn BatchResult::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ExtendedAugmented {
   sample : ExtendedSample
   replay : Replay
-} derive(Eq, @debug.Debug)
+}
 pub fn ExtendedAugmented::equal(Self, Self) -> Bool
 pub fn ExtendedAugmented::not_equal(Self, Self) -> Bool
 pub fn ExtendedAugmented::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ExtendedSample {
   sample : Sample
   keypoints : Array[Keypoint]
-} derive(Eq, @debug.Debug)
+}
 pub fn ExtendedSample::equal(Self, Self) -> Bool
 pub fn ExtendedSample::not_equal(Self, Self) -> Bool
 pub fn ExtendedSample::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Image {
-  width : Int
-  height : Int
-  channels : Int
+  width : Int32
+  height : Int32
+  channels : Int32
   data : Array[Byte]
-} derive(Eq, @debug.Debug)
+}
 pub fn Image::equal(Self, Self) -> Bool
 pub fn Image::not_equal(Self, Self) -> Bool
 pub fn Image::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug, @json.ToJson)
 pub(all) struct Keypoint {
   x : Double
   y : Double
   label : String
   visible : Bool
-} derive(Eq, ToJson, @debug.Debug)
+}
 pub fn Keypoint::equal(Self, Self) -> Bool
 pub fn Keypoint::not_equal(Self, Self) -> Bool
-pub fn Keypoint::to_json(Self) -> Json
+pub fn Keypoint::to_json(Self) -> @json.Json
 pub fn Keypoint::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct LetterboxOptions {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   fill : Array[Byte]
-  mask_value : Int
+  mask_value : Int32
   scale_up : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn LetterboxOptions::equal(Self, Self) -> Bool
 pub fn LetterboxOptions::not_equal(Self, Self) -> Bool
 pub fn LetterboxOptions::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Padding {
-  left : Int
-  top : Int
-  right : Int
-  bottom : Int
+  left : Int32
+  top : Int32
+  right : Int32
+  bottom : Int32
   fill : Array[Byte]
-  mask_value : Int
-} derive(Eq, @debug.Debug)
+  mask_value : Int32
+}
 pub fn Padding::equal(Self, Self) -> Bool
 pub fn Padding::not_equal(Self, Self) -> Bool
 pub fn Padding::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Replay {
-  version : Int
-  input_width : Int
-  input_height : Int
-  input_channels : Int
+  version : Int32
+  input_width : Int32
+  input_height : Int32
+  input_channels : Int32
   min_visibility : Double
   operations : Array[Transform]
-} derive(Eq, @debug.Debug)
+}
 pub fn Replay::equal(Self, Self) -> Bool
 pub fn Replay::not_equal(Self, Self) -> Bool
 pub fn Replay::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ResizedCropOptions {
-  width : Int
-  height : Int
+  width : Int32
+  height : Int32
   scale_min : Double
   scale_max : Double
   ratio_min : Double
   ratio_max : Double
-} derive(Eq, @debug.Debug)
+}
 pub fn ResizedCropOptions::equal(Self, Self) -> Bool
 pub fn ResizedCropOptions::not_equal(Self, Self) -> Bool
 pub fn ResizedCropOptions::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Sample {
   image : Image
-  mask : Array[Int]?
+  mask : Array[Int32]?
   boxes : Array[BBox]
-} derive(Eq, @debug.Debug)
+}
 pub fn Sample::equal(Self, Self) -> Bool
 pub fn Sample::not_equal(Self, Self) -> Bool
 pub fn Sample::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Step {
   transform : Transform
   probability : Double
-} derive(Eq, @debug.Debug)
+}
 pub fn Step::equal(Self, Self) -> Bool
 pub fn Step::not_equal(Self, Self) -> Bool
 pub fn Step::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Transform {
-  Resize(Int, Int)
-  Crop(Int, Int, Int, Int)
-  RandomCrop(Int, Int)
+  Resize(Int32, Int32)
+  Crop(Int32, Int32, Int32, Int32)
+  RandomCrop(Int32, Int32)
   HFlip
   VFlip
-  Rotate90(Int)
+  Rotate90(Int32)
   Brightness(Double)
   Contrast(Double)
   Pad(Padding)
   Letterbox(LetterboxOptions)
   RandomResizedCrop(ResizedCropOptions)
-} derive(Eq, @debug.Debug)
+}
 pub fn Transform::equal(Self, Self) -> Bool
 pub fn Transform::not_equal(Self, Self) -> Bool
 pub fn Transform::to_repr(Self) -> @debug.Repr

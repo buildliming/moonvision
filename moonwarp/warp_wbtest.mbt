@@ -2,7 +2,7 @@
 fn near(
   actual : Double,
   expected : Double,
-  tolerance? : Double = 0.000001,
+  tolerance~ : Double = 0.000001,
 ) -> Unit raise {
   assert_true((actual - expected).abs() <= tolerance)
 }
@@ -340,8 +340,8 @@ test "mismatched batches gradients and optimizer settings raise WarpError" {
 test "JSON registration and backward use the public core numerics" {
   let image = Tensor::new([1, 1, 2, 2], [0.0, 0.2, 0.5, 1.0])
   let input = Json::object({
-    "shape": image.shape().to_json(),
-    "data": image.data().to_json(),
+    "shape": ToJson::to_json(image.shape()),
+    "data": ToJson::to_json(image.data()),
   })
   let registration = Json::object({
     "action": Json::string("register"),
@@ -363,7 +363,7 @@ test "JSON registration and backward use the public core numerics" {
   let backward = Json::object({
     "action": Json::string("backward"),
     "input": input,
-    "theta": identity_theta(1).to_json(),
+    "theta": ToJson::to_json(identity_theta(1)),
     "grad_output": input,
   })
   let response = @json.parse(process_json(backward.stringify()))

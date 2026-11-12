@@ -5,33 +5,39 @@ on:
     branches: [default]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * 1'
 
 permissions:
   contents: read
 
 env:
-  MOONBIT_INSTALL_VERSION: 0.10.14+7d59c7ec9
+  MOONBIT_INSTALL_VERSION: 0.10.20+65efd5b93
 
 jobs:
   backends:
-    name: Test ${{ matrix.target }}
+    name: Test ${{ matrix.target }} (${{ matrix.toolchain }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         target: [wasm-gc, wasm, js, native]
+        toolchain: [pinned, latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Install pinned official MoonBit toolchain
+      - name: Install official MoonBit toolchain
+        env:
+          MOONBIT_TOOLCHAIN_VERSION: ${{ matrix.toolchain == 'latest' && 'latest' || env.MOONBIT_INSTALL_VERSION }}
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o /tmp/install-moonbit.sh
-          bash /tmp/install-moonbit.sh "$MOONBIT_INSTALL_VERSION"
+          bash /tmp/install-moonbit.sh "$MOONBIT_TOOLCHAIN_VERSION"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
       - run: moon check --target ${{ matrix.target }} --deny-warn
+      - run: moon build --target ${{ matrix.target }} --deny-warn
       - run: moon test --target ${{ matrix.target }} --deny-warn
       - run: moon run examples/main --target ${{ matrix.target }}
       - run: moon run examples/pipeline --target ${{ matrix.target }}
@@ -55,6 +61,7 @@ jobs:
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o /tmp/install-moonbit.sh
           bash /tmp/install-moonbit.sh "$MOONBIT_INSTALL_VERSION"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+      - run: moon version --all
       - name: Check formatting and public interfaces
         run: |
           moon fmt

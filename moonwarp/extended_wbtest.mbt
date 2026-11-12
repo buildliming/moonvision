@@ -382,8 +382,8 @@ test "pyramid registration validates settings and preserves a perfect initial fi
 ///|
 test "JSON exposes reusable tensors modes direct-grid gradients and pyramid traces" {
   let raw = Json::object({
-    "shape": [1, 1, 4, 4].to_json(),
-    "data": Array::makei(16, i => i.to_double() / 16.0).to_json(),
+    "shape": ToJson::to_json([1, 1, 4, 4]),
+    "data": ToJson::to_json(Array::makei(16, i => i.to_double() / 16.0)),
   })
   let tensor = tensor_from_json(raw)
   assert_eq(tensor_from_json(tensor_to_json(tensor)).data(), tensor.data())
@@ -400,12 +400,12 @@ test "JSON exposes reusable tensors modes direct-grid gradients and pyramid trac
     ),
   )
   let grid = Json::object({
-    "shape": [1, 1, 1, 2].to_json(),
-    "data": [0.0, 0.0].to_json(),
+    "shape": ToJson::to_json([1, 1, 1, 2]),
+    "data": ToJson::to_json([0.0, 0.0]),
   })
   let upstream = Json::object({
-    "shape": [1, 1, 1, 1].to_json(),
-    "data": [1.0].to_json(),
+    "shape": ToJson::to_json([1, 1, 1, 1]),
+    "data": ToJson::to_json([1.0]),
   })
   let backward = Json::object({
     "action": Json::string("backward"),
@@ -442,14 +442,14 @@ test "JSON exposes reusable tensors modes direct-grid gradients and pyramid trac
 ///|
 test "JSON tensor budget supports 256px RGB and rejects size before copying data" {
   let image = Json::object({
-    "shape": [1, 3, 256, 256].to_json(),
-    "data": Array::make(3 * 256 * 256, 0.25).to_json(),
+    "shape": ToJson::to_json([1, 3, 256, 256]),
+    "data": ToJson::to_json(Array::make(3 * 256 * 256, 0.25)),
   })
   let decoded = tensor_from_json(image)
   assert_eq(decoded.shape(), [1, 3, 256, 256])
   assert_eq(decoded.data().length(), 196608)
   let oversized = Json::object({
-    "shape": [1, 1, 513, 513].to_json(),
+    "shape": ToJson::to_json([1, 1, 513, 513]),
     "data": Json::array([]),
   })
   let size_rejected_first = try {
@@ -460,13 +460,13 @@ test "JSON tensor budget supports 256px RGB and rejects size before copying data
   }
   assert_true(size_rejected_first)
   let input = Json::object({
-    "shape": [1, 1, 1, 1].to_json(),
-    "data": [1.0].to_json(),
+    "shape": ToJson::to_json([1, 1, 1, 1]),
+    "data": ToJson::to_json([1.0]),
   })
   let request = Json::object({
     "action": Json::string("sample"),
     "input": input,
-    "theta": identity_theta(1).to_json(),
+    "theta": ToJson::to_json(identity_theta(1)),
     "out_height": Json::number(512.0),
     "out_width": Json::number(512.0),
   })

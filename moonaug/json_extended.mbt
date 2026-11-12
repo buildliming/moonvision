@@ -25,7 +25,7 @@ fn fill_from_json(value : Json) -> Array[Byte] raise AugError {
 }
 
 ///|
-fn json_value_count(count : Int) -> Unit raise AugError {
+fn json_value_count(count : Int32) -> Unit raise AugError {
   guard count <= MAX_JSON_VALUES else {
     raise Invalid(
       "JSON decoded/output images are limited to 1048576 total channel values",
@@ -48,7 +48,7 @@ fn pipeline_from_json(request : Json) -> Array[Step] raise AugError {
 }
 
 ///|
-fn seed_from_json(request : Json) -> Int raise AugError {
+fn seed_from_json(request : Json) -> Int32 raise AugError {
   match optional_field(request, "seed") {
     Some(value) => integer(value)
     None => 0
@@ -129,12 +129,12 @@ fn single_request(request : Json, action : String) -> Json raise AugError {
   json_output_budget([record])
   let result = execute_extended(input, record)
   let response : Map[String, Json] = {
-    "ok": true.to_json(),
+    "ok": ToJson::to_json(true),
     "sample": sample_to_json(result.sample.sample),
     "replay": replay_to_json(result.replay),
   }
   if points is Some(_) {
-    response["keypoints"] = result.sample.keypoints.to_json()
+    response["keypoints"] = ToJson::to_json(result.sample.keypoints)
   }
   Json::object(response)
 }
@@ -205,13 +205,13 @@ fn batch_request(request : Json, action : String) -> Json raise AugError {
   let results = execute_batch(items, records)
   let output = results.map(fn(result) {
     Json::object({
-      "sample_id": result.sample_id.to_json(),
+      "sample_id": ToJson::to_json(result.sample_id),
       "sample": sample_to_json(result.output.sample.sample),
-      "keypoints": result.output.sample.keypoints.to_json(),
+      "keypoints": ToJson::to_json(result.output.sample.keypoints),
       "replay": replay_to_json(result.output.replay),
     })
   })
-  Json::object({ "ok": true.to_json(), "items": Json::array(output) })
+  Json::object({ "ok": ToJson::to_json(true), "items": Json::array(output) })
 }
 
 ///|

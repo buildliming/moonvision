@@ -25,7 +25,7 @@ fn json_number(value : Json) -> Double raise InteropError {
 }
 
 ///|
-fn json_integer(value : Json) -> Int raise InteropError {
+fn json_integer(value : Json) -> Int32 raise InteropError {
   let number = json_number(value)
   guard number >= -2147483648.0 &&
     number <= 2147483647.0 &&
@@ -57,7 +57,7 @@ fn json_numbers(value : Json) -> Array[Double] raise InteropError {
 }
 
 ///|
-fn image_header(value : Json) -> Array[Int] raise InteropError {
+fn image_header(value : Json) -> Array[Int32] raise InteropError {
   let width = json_integer(json_field(value, "width"))
   let height = json_integer(json_field(value, "height"))
   let channels = json_integer(json_field(value, "channels"))
@@ -108,22 +108,22 @@ fn decoded_points(
 
 ///|
 fn encode_points(points : Array[@moonaug.Keypoint]) -> Json {
-  points
-  .map(fn(point) {
-    Json::object({
-      "x": point.x.to_json(),
-      "y": point.y.to_json(),
-      "label": point.label.to_json(),
-      "visible": point.visible.to_json(),
-    })
-  })
-  .to_json()
+  ToJson::to_json(
+    points.map(fn(point) {
+      Json::object({
+        "x": ToJson::to_json(point.x),
+        "y": ToJson::to_json(point.y),
+        "label": ToJson::to_json(point.label),
+        "visible": ToJson::to_json(point.visible),
+      })
+    }),
+  )
 }
 
 ///|
 fn normalization_parameters(
   request : Json,
-  channels : Int,
+  channels : Int32,
 ) -> (Array[Double], Array[Double])? raise InteropError {
   let mean = json_optional(request, "mean")
   let std = json_optional(request, "std")
@@ -176,7 +176,7 @@ fn process_request(request : Json) -> Json raise InteropError {
       mask_fill~,
     )
     Json::object({
-      "ok": true.to_json(),
+      "ok": ToJson::to_json(true),
       "sample": @moonaug.sample_to_json(output.sample),
       "keypoints": encode_points(output.keypoints),
     })
@@ -212,7 +212,7 @@ fn process_request(request : Json) -> Json raise InteropError {
       Some((mean, std)) => normalize(packed, mean, std)
     }
     Json::object({
-      "ok": true.to_json(),
+      "ok": ToJson::to_json(true),
       "tensor": @moonwarp.tensor_to_json(tensor),
     })
   } else if action == "unpack" {
@@ -232,7 +232,10 @@ fn process_request(request : Json) -> Json raise InteropError {
         _ => Json::null()
       }
     })
-    Json::object({ "ok": true.to_json(), "images": result.to_json() })
+    Json::object({
+      "ok": ToJson::to_json(true),
+      "images": ToJson::to_json(result),
+    })
   } else {
     raise Invalid("action must be warp_sample, pack, or unpack")
   }
@@ -253,13 +256,16 @@ pub fn process_json(request : String) -> String {
     process_request(value)
   } catch {
     Invalid(message) =>
-      Json::object({ "ok": false.to_json(), "error": message.to_json() })
+      Json::object({
+        "ok": ToJson::to_json(false),
+        "error": ToJson::to_json(message),
+      })
   }
   let serialized = result.stringify()
   if serialized.length() > 16000000 {
     Json::object({
-      "ok": false.to_json(),
-      "error": "response exceeds 16000000 characters".to_json(),
+      "ok": ToJson::to_json(false),
+      "error": ToJson::to_json("response exceeds 16000000 characters"),
     }).stringify()
   } else {
     serialized

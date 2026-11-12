@@ -1,5 +1,5 @@
 ///|
-fn matrix_batch(theta : Array[Double]) -> Int raise WarpError {
+fn matrix_batch(theta : Array[Double]) -> Int32 raise WarpError {
   if theta.length() == 0 || theta.length() % 6 != 0 {
     raise Invalid("affine arrays require six coefficients per batch item")
   }
@@ -9,7 +9,7 @@ fn matrix_batch(theta : Array[Double]) -> Int raise WarpError {
 }
 
 ///|
-fn validate_spatial(height : Int, width : Int) -> Unit raise WarpError {
+fn validate_spatial(height : Int32, width : Int32) -> Unit raise WarpError {
   if height < 1 || height > 4096 || width < 1 || width > 4096 {
     raise Invalid("spatial dimensions must be between 1 and 4096")
   }
@@ -17,8 +17,8 @@ fn validate_spatial(height : Int, width : Int) -> Unit raise WarpError {
 
 ///|
 fn validate_convert_spatial(
-  height : Int,
-  width : Int,
+  height : Int32,
+  width : Int32,
   align_corners : Bool,
 ) -> Unit raise WarpError {
   validate_spatial(height, width)
@@ -64,7 +64,7 @@ pub fn compose_theta(
 /// avoids squaring extremely large or small coefficients.
 pub fn invert_theta(
   theta : Array[Double],
-  epsilon? : Double = 0.000000000001,
+  epsilon~ : Double = 0.000000000001,
 ) -> Array[Double] raise WarpError {
   let batch = matrix_batch(theta)
   if !finite(epsilon) || epsilon <= 0.0 || epsilon >= 1.0 {
@@ -111,7 +111,7 @@ pub fn invert_theta(
 pub fn transform_points(
   theta : Array[Double],
   points : Array[(Double, Double)],
-  batch_index? : Int = 0,
+  batch_index~ : Int32 = 0,
 ) -> Array[(Double, Double)] raise WarpError {
   let batch = matrix_batch(theta)
   if batch_index < 0 || batch_index >= batch {
@@ -144,9 +144,9 @@ pub fn transform_points(
 pub fn normalize_pixel_point(
   x : Double,
   y : Double,
-  height : Int,
-  width : Int,
-  align_corners? : Bool = false,
+  height : Int32,
+  width : Int32,
+  align_corners~ : Bool = false,
 ) -> (Double, Double) raise WarpError {
   validate_convert_spatial(height, width, align_corners)
   if !finite(x) || !finite(y) {
@@ -168,9 +168,9 @@ pub fn normalize_pixel_point(
 pub fn denormalize_point(
   x : Double,
   y : Double,
-  height : Int,
-  width : Int,
-  align_corners? : Bool = false,
+  height : Int32,
+  width : Int32,
+  align_corners~ : Bool = false,
 ) -> (Double, Double) raise WarpError {
   validate_convert_spatial(height, width, align_corners)
   if !finite(x) || !finite(y) {
@@ -192,11 +192,11 @@ pub fn denormalize_point(
 /// is N_input * pixel_theta * D_output, with explicit input and output sizes.
 pub fn pixel_affine_to_theta(
   pixel_theta : Array[Double],
-  input_height : Int,
-  input_width : Int,
-  output_height : Int,
-  output_width : Int,
-  align_corners? : Bool = false,
+  input_height : Int32,
+  input_width : Int32,
+  output_height : Int32,
+  output_width : Int32,
+  align_corners~ : Bool = false,
 ) -> Array[Double] raise WarpError {
   let batch = matrix_batch(pixel_theta)
   validate_convert_spatial(input_height, input_width, align_corners)
@@ -240,11 +240,11 @@ pub fn pixel_affine_to_theta(
 /// This is the inverse of pixel_affine_to_theta for nondegenerate dimensions.
 pub fn theta_to_pixel_affine(
   theta : Array[Double],
-  input_height : Int,
-  input_width : Int,
-  output_height : Int,
-  output_width : Int,
-  align_corners? : Bool = false,
+  input_height : Int32,
+  input_width : Int32,
+  output_height : Int32,
+  output_width : Int32,
+  align_corners~ : Bool = false,
 ) -> Array[Double] raise WarpError {
   let batch = matrix_batch(theta)
   validate_convert_spatial(input_height, input_width, align_corners)

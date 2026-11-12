@@ -2,8 +2,8 @@
 fn annotation_forward(
   theta : Array[Double],
   input : @moonaug.Image,
-  height : Int,
-  width : Int,
+  height : Int32,
+  width : Int32,
   align_corners : Bool,
 ) -> Array[Double] raise InteropError {
   guard theta.length() == 6 else {
@@ -55,8 +55,8 @@ fn mapped_edge(
 fn mapped_boxes(
   boxes : Array[@moonaug.BBox],
   matrix : Array[Double],
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   min_visibility : Double,
 ) -> Array[@moonaug.BBox] raise InteropError {
   let result : Array[@moonaug.BBox] = []
@@ -107,8 +107,8 @@ fn mapped_boxes(
 fn mapped_keypoints(
   points : Array[@moonaug.Keypoint],
   matrix : Array[Double],
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
 ) -> Array[@moonaug.Keypoint] raise InteropError {
   let result : Array[@moonaug.Keypoint] = []
   let tolerance = width.max(height).to_double() * 1.0e-12
@@ -151,14 +151,14 @@ fn snap_boundary(value : Double, limit : Double, tolerance : Double) -> Double {
 
 ///|
 fn warped_mask(
-  mask : Array[Int],
+  mask : Array[Int32],
   image : @moonaug.Image,
   grid : @moonwarp.Grid,
-  width : Int,
-  height : Int,
+  width : Int32,
+  height : Int32,
   align_corners : Bool,
-  fill : Int,
-) -> Array[Int] raise InteropError {
+  fill : Int32,
+) -> Array[Int32] raise InteropError {
   let input = mask_to_tensor(mask, image.width, image.height)
   let sampled = @moonwarp.grid_sample(
     input,
@@ -200,11 +200,11 @@ fn warped_mask(
 fn plan_targets(
   sample : @moonaug.Sample,
   theta : Array[Double],
-  height : Int,
-  width : Int,
+  height : Int32,
+  width : Int32,
   align_corners : Bool,
   min_visibility : Double,
-  mask_fill : Int,
+  mask_fill : Int32,
 ) -> (Array[@moonaug.BBox], Array[Double]) raise InteropError {
   @moonaug.validate(sample) catch {
     @moonaug.Invalid(message) => raise Invalid(message)
@@ -246,10 +246,10 @@ fn execute_targets(
   sample : @moonaug.Sample,
   boxes : Array[@moonaug.BBox],
   theta : Array[Double],
-  height : Int,
-  width : Int,
+  height : Int32,
+  width : Int32,
   align_corners : Bool,
-  mask_fill : Int,
+  mask_fill : Int32,
 ) -> @moonaug.Sample raise InteropError {
   let grid = @moonwarp.affine_grid(theta, 1, height, width, align_corners~) catch {
     error => raise convert_error(error)
@@ -297,11 +297,11 @@ fn execute_targets(
 pub fn warp_sample(
   sample : @moonaug.Sample,
   theta : Array[Double],
-  out_height : Int,
-  out_width : Int,
-  align_corners? : Bool = false,
-  min_visibility? : Double = 0.0,
-  mask_fill? : Int = 0,
+  out_height : Int32,
+  out_width : Int32,
+  align_corners~ : Bool = false,
+  min_visibility~ : Double = 0.0,
+  mask_fill~ : Int32 = 0,
 ) -> @moonaug.Sample raise InteropError {
   let (boxes, _) = plan_targets(
     sample, theta, out_height, out_width, align_corners, min_visibility, mask_fill,
@@ -318,11 +318,11 @@ pub fn warp_sample(
 pub fn warp_extended(
   sample : @moonaug.ExtendedSample,
   theta : Array[Double],
-  out_height : Int,
-  out_width : Int,
-  align_corners? : Bool = false,
-  min_visibility? : Double = 0.0,
-  mask_fill? : Int = 0,
+  out_height : Int32,
+  out_width : Int32,
+  align_corners~ : Bool = false,
+  min_visibility~ : Double = 0.0,
+  mask_fill~ : Int32 = 0,
 ) -> @moonaug.ExtendedSample raise InteropError {
   @moonaug.validate_extended(sample) catch {
     @moonaug.Invalid(message) => raise Invalid(message)

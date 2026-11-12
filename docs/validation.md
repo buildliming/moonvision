@@ -1,5 +1,34 @@
 # 验证记录
 
+## 0.2.4 工具链兼容性维护 — 2026-11-12
+
+按维护提醒检查官方当前稳定工具链、README 入口、公开 API、独立参考与 CI。实际从官方 `latest` 下载并校验 SHA-256 的 Windows 工具链为以下版本。
+
+```text
+moon 0.1.20261104 (940aa18 2026-11-04)
+moonc v0.10.20+65efd5b93 (2026-11-05)
+moonrun 0.1.20261104 (940aa18 2026-11-04)
+core 0.10.20+65efd5b93
+```
+
+最新工具链下先复现旧派生语法及内建类型 `.to_json()` 编译失败，再迁移为 `#derive` 和 `ToJson::to_json(value)`，应用官方格式化并更新生成接口。三包 106 个公开函数签名经标准类型名归一化核对一致。隔离消费探针核对旧版 53 个派生公开方法，并执行 BBox/Keypoint 原调用语法和三包像素往返，2 项测试通过。
+
+| 检查 | 本机结果 |
+| --- | --- |
+| Windows wasm-gc / wasm / js | 各 193/193 测试通过，分别通过 check/build 和三个示例 |
+| WSL Ubuntu 24.04 Native，GCC 13.3.0 | 193/193 测试通过，check/build 和三个示例通过 |
+| 独立数值参考、有限差分和字段隔离负向编译 | 全部通过 |
+| JSON 桥接 / Node 调用层与 CLI | 29 项 / 19 组通过 |
+| 真实照片预处理 | 3 张照片，82944 个 NCHW 值，ID 重放及像素往返通过 |
+| 原有真实图回归 | 10 组样本，173 次请求通过 |
+| 退化图像回归 | 100 组，3235 次请求通过 |
+| 浏览器交互 | 重放导入、错误恢复、RGBA、配准、移动布局通过，无未捕获异常 |
+| 格式与接口 | `moon fmt`、`moon info`、`git diff --check` 通过 |
+
+Windows 使用 Python 3.13.9 隔离环境和固定 NumPy 2.3.5、PyTorch 2.12.0+cpu、Pillow 12.3.0，执行 `python tools/verify.py --target wasm-gc --target wasm --target js --references --real-images`。该工具链 Windows Native 要求 MSVC Build Tools 和 Windows SDK，本机仅有 GCC，因此 Native 在 WSL 中独立验收。
+
+可复用验收入口现在逐次记录 `moon version --all`，对选定后端分别执行 check/build/test 和全部三个公开 API 示例。CI 使用固定 `0.10.20+65efd5b93` 与官方 `latest` 的四后端矩阵，推送、PR 及每周一北京时间 09:00 运行，数值与浏览器作业使用固定工具链。远程 CI 和 Mooncakes 发布状态需分别核实。
+
 ## 0.2.3 发布包修正 — 2026-10-28
 
 0.2.2 提交的远程 CI 五个作业全部通过，包括四后端及独立参考/浏览器；Mooncakes 上传 2,549,131 字节的源码包时返回 HTTP 413，注册表未发布该版本。保留原 Git 标签，以 0.2.3 发布打包修正。

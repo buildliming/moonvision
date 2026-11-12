@@ -14,7 +14,7 @@ fn response_field(value : Json, key : String) -> Json {
 ///|
 fn invoke_interop(request : Json) -> Json raise {
   let response = @json.parse(@interop.process_json(request.stringify()))
-  assert_eq(response_field(response, "ok"), true.to_json())
+  assert_eq(response_field(response, "ok"), ToJson::to_json(true))
   response
 }
 
@@ -357,34 +357,34 @@ test "annotated warps reject singular nonfinite unsafe geometry and resource sha
 test "JSON batch normalization round trip and annotated translation match typed contracts" {
   let images = Json::array([
     Json::object({
-      "width": (2).to_json(),
-      "height": (1).to_json(),
-      "channels": (1).to_json(),
-      "data": [0, 255].to_json(),
+      "width": ToJson::to_json(2),
+      "height": ToJson::to_json(1),
+      "channels": ToJson::to_json(1),
+      "data": ToJson::to_json([0, 255]),
     }),
     Json::object({
-      "width": (2).to_json(),
-      "height": (1).to_json(),
-      "channels": (1).to_json(),
-      "data": [64, 128].to_json(),
+      "width": ToJson::to_json(2),
+      "height": ToJson::to_json(1),
+      "channels": ToJson::to_json(1),
+      "data": ToJson::to_json([64, 128]),
     }),
   ])
   let packed = invoke_interop(
     Json::object({
-      "action": "pack".to_json(),
+      "action": ToJson::to_json("pack"),
       "images": images,
-      "mean": [0.5].to_json(),
-      "std": [0.25].to_json(),
+      "mean": ToJson::to_json([0.5]),
+      "std": ToJson::to_json([0.25]),
     }),
   )
   let tensor = response_field(packed, "tensor")
-  assert_eq(response_field(tensor, "shape"), [2, 1, 1, 2].to_json())
+  assert_eq(response_field(tensor, "shape"), ToJson::to_json([2, 1, 1, 2]))
   let unpacked = invoke_interop(
     Json::object({
-      "action": "unpack".to_json(),
+      "action": ToJson::to_json("unpack"),
       "tensor": tensor,
-      "mean": [0.5].to_json(),
-      "std": [0.25].to_json(),
+      "mean": ToJson::to_json([0.5]),
+      "std": ToJson::to_json([0.25]),
     }),
   )
   assert_eq(response_field(unpacked, "images"), images)
@@ -408,20 +408,23 @@ test "JSON batch normalization round trip and annotated translation match typed 
   )
   let response = invoke_interop(
     Json::object({
-      "action": "warp_sample".to_json(),
+      "action": ToJson::to_json("warp_sample"),
       "sample": @moonaug.sample_to_json(sample),
-      "keypoints": keypoints.to_json(),
-      "theta": theta.to_json(),
-      "out_height": (2).to_json(),
-      "out_width": (2).to_json(),
-      "mask_fill": (9).to_json(),
+      "keypoints": ToJson::to_json(keypoints),
+      "theta": ToJson::to_json(theta),
+      "out_height": ToJson::to_json(2),
+      "out_width": ToJson::to_json(2),
+      "mask_fill": ToJson::to_json(9),
     }),
   )
   assert_eq(
     response_field(response, "sample"),
     @moonaug.sample_to_json(expected.sample),
   )
-  assert_eq(response_field(response, "keypoints"), expected.keypoints.to_json())
+  assert_eq(
+    response_field(response, "keypoints"),
+    ToJson::to_json(expected.keypoints),
+  )
 }
 
 ///|
@@ -432,42 +435,42 @@ test "JSON invalid requests fail structurally including preflight aggregate limi
       "{\"action\":\"unpack\",\"tensor\":{\"shape\":[1,1,1.5,1],\"data\":[1]}}",
     ] {
     let response = @json.parse(@interop.process_json(request))
-    assert_eq(response_field(response, "ok"), false.to_json())
+    assert_eq(response_field(response, "ok"), ToJson::to_json(false))
     assert_true(response_field(response, "error") is String(_))
   }
   let image = Json::object({
-    "width": (1).to_json(),
-    "height": (1).to_json(),
-    "channels": (1).to_json(),
-    "data": [0].to_json(),
+    "width": ToJson::to_json(1),
+    "height": ToJson::to_json(1),
+    "channels": ToJson::to_json(1),
+    "data": ToJson::to_json([0]),
   })
   let incomplete = Json::object({
-    "action": "pack".to_json(),
-    "images": [image].to_json(),
-    "mean": [0.5].to_json(),
+    "action": ToJson::to_json("pack"),
+    "images": ToJson::to_json([image]),
+    "mean": ToJson::to_json([0.5]),
   })
   assert_eq(
     response_field(
       @json.parse(@interop.process_json(incomplete.stringify())),
       "ok",
     ),
-    false.to_json(),
+    ToJson::to_json(false),
   )
   // The second image exceeds the aggregate JSON budget. Pixel bytes are not decoded.
   let large = Json::object({
-    "width": (512).to_json(),
-    "height": (512).to_json(),
-    "channels": (1).to_json(),
-    "data": Array::make(262144, 0).to_json(),
+    "width": ToJson::to_json(512),
+    "height": ToJson::to_json(512),
+    "channels": ToJson::to_json(1),
+    "data": ToJson::to_json(Array::make(262144, 0)),
   })
   let request = Json::object({
-    "action": "pack".to_json(),
-    "images": [large, large].to_json(),
+    "action": ToJson::to_json("pack"),
+    "images": ToJson::to_json([large, large]),
   })
   let response = @json.parse(@interop.process_json(request.stringify()))
-  assert_eq(response_field(response, "ok"), false.to_json())
+  assert_eq(response_field(response, "ok"), ToJson::to_json(false))
   assert_eq(
     response_field(response, "error"),
-    "JSON packed tensors are limited to 262144 values".to_json(),
+    ToJson::to_json("JSON packed tensors are limited to 262144 values"),
   )
 }

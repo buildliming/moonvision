@@ -4,7 +4,7 @@
 fn extended_sample_close(
   actual : @moonaug.Sample,
   expected : @moonaug.Sample,
-  tolerance : Int,
+  tolerance : Int32,
 ) -> Unit raise {
   assert_eq(
     (actual.image.width, actual.image.height, actual.image.channels),
@@ -1237,10 +1237,10 @@ test "extended independent geometry: positive_box_area_must_not_underflow" {
 
 ///|
 fn extended_crop_expected(
-  x : Int,
-  y : Int,
-  width : Int,
-  height : Int,
+  x : Int32,
+  y : Int32,
+  width : Int32,
+  height : Int32,
 ) -> @moonaug.Sample raise {
   match (x, y, width, height) {
     (0, 0, 1, 1) =>

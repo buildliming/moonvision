@@ -37,30 +37,30 @@ test "denormalization rescales overflowing products when the final sum is finite
 test "JSON unpack uses the same stable denormalization as the typed API" {
   let response = invoke_interop(
     Json::object({
-      "action": "unpack".to_json(),
+      "action": ToJson::to_json("unpack"),
       "tensor": Json::object({
-        "shape": [2, 1, 1, 1].to_json(),
-        "data": [1.0e308, 5.0e307].to_json(),
+        "shape": ToJson::to_json([2, 1, 1, 1]),
+        "data": ToJson::to_json([1.0e308, 5.0e307]),
       }),
-      "mean": [-1.0e308].to_json(),
-      "std": [2.0].to_json(),
+      "mean": ToJson::to_json([-1.0e308]),
+      "std": ToJson::to_json([2.0]),
     }),
   )
   let expected = [
     Json::object({
-      "width": (1).to_json(),
-      "height": (1).to_json(),
-      "channels": (1).to_json(),
-      "data": [255].to_json(),
+      "width": ToJson::to_json(1),
+      "height": ToJson::to_json(1),
+      "channels": ToJson::to_json(1),
+      "data": ToJson::to_json([255]),
     }),
     Json::object({
-      "width": (1).to_json(),
-      "height": (1).to_json(),
-      "channels": (1).to_json(),
-      "data": [0].to_json(),
+      "width": ToJson::to_json(1),
+      "height": ToJson::to_json(1),
+      "channels": ToJson::to_json(1),
+      "data": ToJson::to_json([0]),
     }),
   ]
-  assert_eq(response_field(response, "images"), expected.to_json())
+  assert_eq(response_field(response, "images"), ToJson::to_json(expected))
 }
 
 ///|
