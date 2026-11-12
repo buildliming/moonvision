@@ -2,7 +2,13 @@
 
 ## 环境
 
-本次验证在 Windows 执行 wasm-gc/wasm/js 及数值与浏览器回归，在 WSL Ubuntu 24.04（GCC 13.3.0）执行 Native 检查、构建、测试和三个示例。使用 MoonBit `0.10.20+65efd5b93`（`moon 0.1.20261104`）、Node.js `24.15.0`、Python `3.13.9`。Native 在 Linux 需要 C 编译器。该工具链的 Windows Native 后端要求 MSVC Build Tools 和 Windows SDK，并应在 Developer PowerShell 中运行。
+0.2.5 沿用 0.2.4 的库源码与公开接口，增加 JSON 验收报告、超时和接口稳定性检查，并扩展 CI 深度检查矩阵。该版本与以下固定工具链配套。
+
+0.2.4 发布时在 Windows 执行 wasm-gc/wasm/js 及数值与浏览器回归，在 WSL Ubuntu 24.04（GCC 13.3.0）执行 Native 检查、构建、测试和三个示例。该次发布使用 MoonBit `0.10.20+65efd5b93`（`moon 0.1.20261104`）、Node.js `24.15.0`、Python `3.13.9`。
+
+本轮对齐后，两处维护副本使用相同的 MoonBit、配套 core、Node.js 与 Python 版本，在 Windows 分别完成四后端的检查、构建、测试和全部三个示例，以及独立数值参考与真实图回归。Windows Native 使用 MSVC 工具集 `14.44.35207`、cl 产品版本 `14.44.35230.0` 和 Windows SDK `10.0.26100.0`。
+
+Native 在 Linux 需要 C 编译器。该工具链的 Windows Native 后端要求 MSVC Build Tools 和 Windows SDK，并应在 Developer PowerShell 中运行。
 
 CI 分别验证上述固定版本和官方 `latest` 稳定工具链，逐次记录 `moon version --all`。固定环境通过官方脚本安装。
 
@@ -105,4 +111,6 @@ node tools/browser_check.mjs
 python tools/verify.py --references --real-images
 ```
 
-此命令先记录工具链版本，再对四个后端分别执行类型检查、构建、测试和三个可运行示例，然后对 JS 编译产物、CLI 流传输、三套参考重建、负向编译、真实照片预处理案例和真实图片依次验证，任何失败立即退出。可用重复的 `--target` 选择部分后端；完整交付应运行四个。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。
+此命令记录 `moon version --all`、Node.js/Python 版本和源码 Git 状态，检查格式与生成接口稳定性，再对四个后端分别执行类型检查、构建、测试和三个可运行示例，随后验证 JS 编译产物、CLI 流传输、三套参考重建、负向编译、真实照片预处理案例和真实图片。
+
+默认报告为 `artifacts/validation.json`，包含命令、退出码、输出和耗时。每次运行先重置通过状态，失败或超时立即退出并保存记录。单条命令默认超时 600 秒，可用 `--timeout` 调整。`--report artifacts/自选名称.json` 可保存独立记录。重复指定 `--target` 会去重，例如 `python tools/verify.py --target js --target wasm-gc`。报告记录实际选择的后端，默认验证四个后端。接口比较统一文本换行，兼容 Windows 检出。真实照片已随仓库附带，测试不联网下载，来源与许可见 [真实图说明](real-images.md)。

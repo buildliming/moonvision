@@ -44,8 +44,12 @@ jobs:
       - run: moon run examples/annotated --target ${{ matrix.target }}
 
   references-and-demo:
-    name: Independent references and browser
+    name: Independent references and browser (${{ matrix.toolchain }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [pinned, latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,10 +60,12 @@ jobs:
           python-version: '3.13.9'
           cache: pip
           cache-dependency-path: verification/requirements.txt
-      - name: Install pinned official MoonBit toolchain
+      - name: Install official MoonBit toolchain
+        env:
+          MOONBIT_TOOLCHAIN_VERSION: ${{ matrix.toolchain == 'latest' && 'latest' || env.MOONBIT_INSTALL_VERSION }}
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o /tmp/install-moonbit.sh
-          bash /tmp/install-moonbit.sh "$MOONBIT_INSTALL_VERSION"
+          bash /tmp/install-moonbit.sh "$MOONBIT_TOOLCHAIN_VERSION"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
       - run: moon version --all
       - name: Check formatting and public interfaces
@@ -104,7 +110,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: browser-screenshots
+          name: browser-screenshots-${{ matrix.toolchain }}
           path: |
             artifacts/*.png
             artifacts/real-images-report.json

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5 — 2026-11-12
+
+- Save toolchain and command results in JSON validation reports, with configurable per-command timeouts and deduplicated backend selection.
+- Check source formatting and generated-interface stability during verification, with normalized Windows line endings and recorded failures.
+- Extend the independent-reference and browser CI job to both the pinned toolchain and official `latest`.
+
 ## 0.2.4 — 2026-11-12
 
 - Migrate to the official stable toolchain `moonc v0.10.20+65efd5b93` and matching core, including derive attributes, explicit-width integer formatting and qualified JSON trait calls.
